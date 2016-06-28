@@ -1,4 +1,4 @@
-﻿<a name="HOLTop"></a>
+<a name="HOLTop"></a>
 # Intelligent Application #
 
 ---
@@ -8,18 +8,15 @@
 
 In this module you will build an eCommerce web site for an automotive parts supplier called "Parts Unlimited".
 
-One of the challenges for this scenario implementation is how the data will be stored. Every part of the catalog may have its own attributes in addition to the common attributes that all parts share. Furthermore, attributes for a specific part can change the following year when a new model is released. To address this, you will use **DocumentDB**. As a JSON document store, _DocumentDB_ supports flexible schemas (NoSQL store) with no need to add indexes (is fully indexed by default) and allows you to represent data with nested properties. Also, DocumentDB is a _PaaS_ offering on Azure. That means you don't manage a virtual machine yourself, all you need to do is create a DocumentDB instance in the Azure portal and connect with any of the available drivers/SDKs.
+For the web site you will also might want to track the user interactions (such as products views, additions to the cart, etc.) for further analysis. The challenge here is to process millions of events from concurrent users connected from different devices across the globe. With **Azure Event Hubs** or **Azure IoT Hub** you can process large amounts of event data from connected devices and applications. These are managed services that ingest events with elastic scale to accommodate to  variable load profiles and the spikes caused by intermittent connectivity.
 
-For the web site you will also might want to track the user interactions (such as products views, additions to the cart, etc.) for further analysis. The challenge here is to process millions of events from concurrent users connected from different devices across the globe. With **Azure Event Hubs** you can process large amounts of event data from connected devices and applications. Azure Event Hubs is a managed service that ingests events with elastic scale to accommodate to  variable load profiles and the spikes caused by intermittent connectivity.
-
-After you collect data into Event Hubs, you can store the data using a storage cluster or transform it using a real-time analytics provider. **Azure Stream Analytics** is integrated out-of-the-box with Azure Event Hubs to ingest millions of events per second. Stream Analytics processes ingested events in real-time, comparing multiple streams or comparing streams with historical values and models. It detects anomalies, transforms incoming data, triggers an alert when a specific error or condition appears in the stream, and displays this real-time data in your dashboard. For this scenario, you will use **Stream Analytics** to process and spool data to Blob Storage and Power BI.
+After you collect data into IoT Hubs, you can store the data using a storage cluster or transform it using a real-time analytics provider. **Azure Stream Analytics** is integrated out-of-the-box with Azure IoT Hubs to ingest millions of events per second. Stream Analytics processes ingested events in real-time, comparing multiple streams or comparing streams with historical values and models. It detects anomalies, transforms incoming data, triggers an alert when a specific error or condition appears in the stream, and displays this real-time data in your dashboard. For this scenario, you will use **Stream Analytics** to process and spool data to Blob Storage and Power BI.
 
 <a name="Objectives"></a>
 ### Objectives ###
 In this module, you'll:
 
-- Walk through **DocumentDB** integration
-- Create an **Event Hub** and integrate it into a Web App
+- Create an **IoT Hub** and integrate it into a Web App
 - Use **Stream Analytics** to process data in near-realtime and spool data to **Blob Storage** and **Power BI**
 - Create a sample **Power BI** dashboard
 
@@ -38,24 +35,14 @@ The following is required to complete this module:
 [3]: http://storageexplorer.com/
 [4]: https://github.com/paolosalvatori/ServiceBusExplorer
 
-<a name="Setup"></a>
-### Setup ###
-Throughout the module document, you'll be instructed to insert code blocks. For your convenience, most of this code is provided as Visual Studio Code Snippets, which you can access from within Visual Studio 2015 to avoid having to add it manually. To install the code snippets run the setup script:
 
-1. Open Windows Explorer and browse to the module's **Source** folder.
-1. Right-click **Setup.cmd** and select **Run as administrator** to launch the setup process that will configure your environment and install the Visual Studio code snippets for this module.
-1. If the User Account Control dialog box is shown, confirm the action to proceed.
 
-> **Note**: Each exercise is accompanied by a starting solution located in the **Begin** folder of the exercise, when applicable, that allows you to follow each exercise independently of the others. Please be aware that the code snippets that are added during an exercise are missing from these starting solutions and may not work until you've completed the exercise. Inside the source code for an exercise, you'll also find an **End** folder, when applicable, containing a Visual Studio solution with the code that results from completing the steps in the corresponding exercise. You can use these solutions as guidance if you need additional help as you work through this module.
-
----
 
 <a name="Exercises"></a>
 ## Exercises ##
 This module includes the following exercises:
 
-1. [Walking through DocumentDB Integration](#Exercise1)
-1. [Creating and integrating Event Hubs](#Exercise2)
+1. [Creating and integrating Event Hubs](#Exercise1)
 1. [Using Stream Analytics to process your data](#Exercise3)
 1. [Visualizing your data with Power BI](#Exercise4)
 
@@ -67,248 +54,14 @@ Estimated time to complete this module: **60 minutes**
 
 > _General Development Settings_
 
+
 <a name="Exercise1"></a>
-### Exercise 1: Walking through DocumentDB Integration ###
+### Exercise 2: Creating and integrating IoT Hubs ###
 
-DocumentDB is a massively scalable NoSQL system (JSON documents) that partitions data across multiple nodes, automatically replicating data 3X. The JSON documents are automatically indexed by default. 
-
-In this exercise, you'll create and integrate the website product catalog in DocumentDB.
+Azure IoT Hubs is an event processing service that provides event and telemetry ingress to the cloud at massive scale, with low latency and high reliability. This service, used with other downstream services, is particularly useful in application instrumentation, user experience or workflow processing, and Internet of Things (IoT) scenarios.
+In this exercise, you will use Azure IoT Hubs to track the user behavior in your retail website when viewing a product and also when adding it to the cart.
 
 <a name="Ex1Task1"></a>
-#### Task 1 - Creating the DocumentDB database ####
-
-In this task, you'll create a DocumentDB account. If you already have an account you want to use, you can skip ahead to the next task.
-
-1. Sign in to the online [Microsoft Azure portal](https://portal.azure.com/).
-
-1. In the Jumpbar, click **New**, then **Data + Storage**, and **Azure DocumentDB**.
-
-	![Creating a new DocumentDB account](Images/creating-a-new-documentdb-account.png?raw=true "Creating a new DocumentDB account")
-
-	_Creating a new DocumentDB account_
-
-1. In the **New DocumentDB account** blade, specify an **ID**, e.g. datamodule1 and a **Resource Group**; take into account that you'll want to use the same Resource Group for all the Azure services you create in this module. Finally, choose the same **Location** where the Resource Group is created.
-
-1. Once the new DocumentDB account options are configured, click **Create**. It can take a few minutes for the DocumentDB account to be created. To check the status, you can monitor the progress on the main Dashboard or from the Notifications icon located at the top right next to the search bar.
-
-1. Open in Visual Studio the **ProductCatalogSampleData.sln** solution located at **Source / Ex1 / Assets / ProductCatalogSampleData** folder.
-  
-	_DocumentDB_ exposes a _RESTful_ interface over _HTTPS_ or _TCP_, for an easier development, this project is using the client SDK available through a [NuGet package](https://www.nuget.org/packages/Microsoft.Azure.DocumentDB). The SDK can be configured to automatically handle the mapping from logical to physical location of data (at a performance cost) and it can be used in direct mode for greater performance (at the cost of more complex client code).
-
-1. Go back to the portal and verify the DocumentDB account was created. Navigate to the **Keys** blade of your DocumentDB account; copy the **URI** and **Primary Key**.
-
-	![Copying the DocumentDB account keys](Images/copying-documentdb-keys.png?raw=true "Copying the DocumentDB account keys")
-
-	_Copying the DocumentDB account keys_
-
-1. Replace the **documentDbEndpoint** and  **documentDbAuthKey** values in **Program.cs** with the DocumentDB **URI** and **Primary Key** you copied.
-
-1. Navigate to the **DocumentDBTestData** class. This is a helper class that uses a 'Repository' to populate with sample data that is hardcoded in this class.
-
-1. Navigate to the **ProductsRepository** class. Notice this class exposes read functions (_GetDocumentById, GetById, Find_) using LinQ extensions for DocumentDB (_Microsoft.Azure.Documents.Linq_) and write functions (_CreateAsync, UpdateAsync, CreateOrUpdateAsync, DeleteAsync_), all of them makes use (directly or through private functions) of the **DocumentClient** class (_Client_ property) which provides a client-side logical representation of the Azure DocumentDB service.
-
-	> **Note:** in next task you will see more details about this class which is reused in the Web application.
-
-1. **Build** the solution to trigger the download of required NuGet packages.
-
-1. **Run** the application.
-
-1. In the Azure Portal, go to your DocumentDB settings and click **Document Explorer**.
-
-1. Select _PartsUnlimited_ in the **Databases** list and _Products_ in **Collections**. Then select one of the ID's below in order to see the JSON document.
-
-	![Document Explorer](Images/documentdb-explorer.png?raw=true "Document Explorer")
-
-	_Document Explorer_
-
-<a name="Ex1Task2"></a>
-#### Task 2 - Configuring the Parts Unlimited solution ####
-
-The Parts Unlimited solution is an automotive parts scenario where every product may have its own attributes in addition to the common attributes that all products share. Furthermore, attributes for a specific product can change the following year when a new model is released. As a JSON document store, DocumentDB supports flexible schemas and allows you to represent data with nested properties, and thus it is well suited for storing product catalog data.
-
-In this task you'll explore the implementation and configure the DocumentDB settings.
-
-1. Open in Visual Studio the **PartsUnlimited.sln** solution located at **Source / Ex1 / Begin** folder.
-
-1. Open the **ProductsRepository.cs** file located in the **PartsUnlimited.Models** project.
-
-1. The **ReadOrCreateDatabase** method uses the internal instance of the **DocumentClient** to load an existing DocumentDB or create a new one using the [CreateDatabaseAsync](https://msdn.microsoft.com/library/microsoft.azure.documents.client.documentclient.createdatabaseasync.aspx) method. The method uses the "**Client**" property which exposes a single instance of the **DocumentClient** (a best practice). We check for the existence of the database by looking for the **databaseId** passed into the repository constructor. If the database does not exist, we call **CreateDatabaseAsync** to create it.
-
-	````C#
-	private Database ReadOrCreateDatabase()
-	{
-			var db = this.Client.CreateDatabaseQuery()
-											.Where(d => d.Id == this.databaseId)
-											.AsEnumerable()
-											.FirstOrDefault();
-
-			if (db == null)
-			{
-					db = this.Client.CreateDatabaseAsync(new Database { Id = this.databaseId }).Result;
-			}
-
-			return db;
-	}
-	````
-
-1. Check the **ReadOrCreateCollection** method. A collection is a container of JSON documents and associated JavaScript application logic, such as stored procedures, triggers or user defined functions, and it can be created by using the [CreateDocumentCollectionQuery](https://msdn.microsoft.com/library/microsoft.azure.documents.client.documentclient.createdocumentcollectionquery.aspx) method of the **DocumentClient** class.
-
-	````C#
-	private DocumentCollection ReadOrCreateCollection(string databaseLink)
-	{
-			var col = this.Client.CreateDocumentCollectionQuery(databaseLink)
-												.Where(c => c.Id == this.collectionId)
-												.AsEnumerable()
-												.FirstOrDefault();
-
-			if (col == null)
-			{
-					col = this.Client.CreateDocumentCollectionAsync(databaseLink, new DocumentCollection { Id = this.collectionId }).Result;
-			}
-
-			return col;
-	}
-	````
-
-1. Check the **Set<****T****>** function. This is a generic helper function that uses the "Client" object to create and return a query of the given type.
-
-	````C#
-	public IQueryable<T> Set<T>()
-	{
-			return this.Client.CreateDocumentQuery<T>(this.Collection.SelfLink);
-	}
-	````
-
-1. You will use the **GetById** and **Find** methods to query DocumentDB using the [CreateDocumentQuery](https://msdn.microsoft.com/en-us/library/microsoft.azure.documents.client.documentclient.createdocumentquery.aspx) method. So let's implement them:
-
-	1. Locate the **GetById** method and remove the current code (_TODO comment and the NotImplementedException_).
-
-	1. Write code to call the **Set** helper function using the **Product** type and use LINQ methods to filter results by the **ProductId** using the **id** parameter and return the first finding.
-
-		(Code Snippet - _IntelligentApplication - GetById_)
-		<!-- mark:3-6 -->
-		````C#
-		public Product GetById(int id)
-		{
-			return this.Set<Product>()
-					.Where(d => d.ProductId == id)
-					.AsEnumerable()
-					.FirstOrDefault();
-		}
-		````
-
-	1. Repeat the steps to implement the **Find** function. Also use the **Set** helper function and LINQ functions but this time use the **predicate** parameter to filter and return all the results.
-
-		(Code Snippet - _IntelligentApplication - Find_)
-		<!-- mark:3-5 -->
-		````C#
-		public IEnumerable<Product> Find(Expression<Func<Product, bool>> predicate)
-		{
-			return this.Set<Product>()
-					.Where(predicate)
-					.AsEnumerable();
-		}
-		````
-
-1. A [document](https://azure.microsoft.com/documentation/articles/documentdb-resources/#documents) can be created using the [CreateDocumentAsync](https://msdn.microsoft.com/library/microsoft.azure.documents.client.documentclient.createdocumentasync.aspx) method. Let's create a function in the repository to create products using the _CreateDocumentAsync_.
-
-	1. Locate the **CreateAsync** method and remove the current code (_TODO comment and the NotImplementedException_).
-
-	1. First we have to set the ProductId if it not already set. To do this, we can use the **GenerateProductId** helper function that will find the maximum ProductId value and return the incremented value.
-
-		(Code Snippet - _IntelligentApplication - CreateAsyncCheckProductId_)
-		<!-- mark:3-6 -->
-		````C#
-		public async Task CreateAsync(Product product)
-		{
-			if (product.ProductId == 0)
-			{
-				product.ProductId = GenerateProductId();
-			}
-		}
-		````
-
-	1. Now, we can call **CreateDocumentAsync** to persist the new product object. Also, make sure the operation succeeded by calling the helper function **EnsureSuccessStatusCode**.
-
-		(Code Snippet - _IntelligentApplication - CreateAsyncCreateDocument_)
-		<!-- mark:8-9 -->
-		````C#
-		public async Task CreateAsync(Product product)
-		{
-			if (product.ProductId == 0)
-			{
-				product.ProductId = GenerateProductId();
-			}
-
-			var response = await this.Client.CreateDocumentAsync(this.Collection.SelfLink, product);
-			this.EnsureSuccessStatusCode(response);
-		}
-		````
-
-		> **Note:** Both helper functions (_GenerateProductId_ and _EnsureSuccessStatusCode_) are pretty simple implementations and you can take a look at them at the bottom of the _ProductsRepository_ class.
-
-1. The **UpdateAsync** method uses the DocumentClient [ReplaceDocumentAsync](https://msdn.microsoft.com/library/microsoft.azure.documents.client.documentclient.replacedocumentasync.aspx) method to update and existing document. Note that the document is required.
-
-	````C#
-	public async Task UpdateAsync(Product product)
-	{
-			Document doc = this.GetDocumentById(product.ProductId);
-
-			if (doc == null)
-			{
-					throw new Exception(string.Format(CultureInfo.InvariantCulture, "Cannot find a product with id '{0}'", product.ProductId));
-			}
-
-			var response = await this.Client.ReplaceDocumentAsync(doc.SelfLink, product);
-			this.EnsureSuccessStatusCode(response);
-	}
-	````
-
-1. The **DeleteAsync** method gets the document and deletes it using the client [DeleteDocumentAsync](https://msdn.microsoft.com/library/microsoft.azure.documents.client.documentclient.deletedocumentasync.aspx) method.
-
-	````C#
-	public async Task DeleteAsync(Product product)
-	{
-			Document doc = this.GetDocumentById(product.ProductId);
-
-			if (doc != null)
-			{
-					await this.Client.DeleteDocumentAsync(doc.SelfLink);
-			}
-	}
-	````
-
-1. Before running the app, you will configure the DocumentDB settings. Open the **config.json** file located in the **PartsUnlimited** website.
-
-	![config.json file](Images/config-json.png?raw=true "config.json file")
-
-	_config.json file_
-
-1. Update the DocumentDB **Endpoint** and **AuthKey** settings with the **URI** and **Primary Key** values that you got from the previous task.
-
-1. Open the **ProductsRepository** from the **PartsUnlimited.Models** project and set a breakpoint inside the **GetById** function.
-
-1. Press **F5** to start debugging the application and navigate to its local URL.
-
-	>**Note**: If you see any CSS issue, stop the app, right-click on PartsUnlimited Dependencies and select **Restore Packages**. Then, run the grunt task **default** in the 'Task Runner Explorer' window.
-
-1. Click on any product displayed in the home page. The breakpoint should be hit.
-
-1. Press **F10** to step over to the caller function "Details". This is the controller action invoked by the _/details/{id}_ endpoint. As you can see, the action uses an instance of the ProductsRepository class to get the product data from DocumentDB and then display it in the corresponding view (preivously, it tries to retrieve from cache or store it if it's not cached).
-
-	![Debugging product details](Images/debugging-get-product.png?raw=true "Debugging product details")
-
-	_Debugging product details_
-
-1. Stop debugging.
-
-<a name="Exercise2"></a>
-### Exercise 2: Creating and integrating Event Hubs ###
-
-Azure Event Hubs is an event processing service that provides event and telemetry ingress to the cloud at massive scale, with low latency and high reliability. This service, used with other downstream services, is particularly useful in application instrumentation, user experience or workflow processing, and Internet of Things (IoT) scenarios.
-In this exercise, you will use Azure Event Hubs to track the user behavior in your retail website when viewing a product and also when adding it to the cart.
-
-<a name="Ex2Task1"></a>
 #### Task 1 - Creating the Event Hub ####
 
 In this task, you will create the Event Hub that will be used in the following tasks.
@@ -339,91 +92,28 @@ In this task, you will create the Event Hub that will be used in the following t
 
 1. Your Event Hub is now created, and you have the connection strings you need to send and receive events.
 
+
 <a name="Ex2Task2"></a>
-#### Task 2 - Integrating Event Hubs in the PartsUnlimited solution ####
+#### Task 2 - Configuring and starting event generator application ####
 
-In this task, you'll update the website so it sends events to your Event Hub, in particular when a user browses a product or adds a product to the cart.
+In this task, you'll set up and run a console application that will randomly create and send events - such as add, view, checkout and remove - to your Event Hub. Later in this module, you'll visualize these events in Power BI.
 
-1. Open in Visual Studio the **PartsUnlimited.sln** solution located at **Source / Ex1 / Begin** folder.
+1. Open in Visual Studio the **PartsUnlimitedDataGen.sln** solution located at **Source / Ex3 / Begin** folder.
 
-1. In Solution Explorer, right-click the solution, and then click **Manage NuGet Packages for Solution...**.
+1. Replace the **eventHubName** and  **eventHubConnectionString** values in **Program.cs** with the connection string and name of the **SendRule** from your Event Hub .
 
-1. Search for **Microsoft Azure Service Bus**, select the NuGet package with id **WindowsAzure.ServiceBus**, check the **src\PartsUnlimited** project and click **Install**. Alternatively, you can open the Package Manager Console and run:
+1. Build the solution to trigger the download of required NuGet packages.
 
-	````
-	Install-Package WindowsAzure.ServiceBus
-	````
+1. Run the application.
 
-1. Create a new API controller within the **api** folder and name it **EventsController**; replace the content of the file with the following code snippet. Make sure to update the static fields **eventHubName** and the **connectionString** with the values from the previous task.
+	![Generating events](Images/events-generator.png?raw=true "Generating events")
 
-	(Code Snippet - _IntelligentApplication - EventsController_)
-	<!-- mark:1-22 -->
-	````C#
-	namespace PartsUnlimited.api
-	{
-	    using System.Text;
-	    using Microsoft.AspNet.Mvc;
-	    using Microsoft.ServiceBus.Messaging;
-
-	    [Route("api/events")]
-	    public class EventsController : Controller
-	    {
-	        private static string eventHubName = "{event hub name}";
-	        private static string connectionString ="{SendRule Connection String}";
-
-	        // POST api/values
-	        [HttpPost]
-	        public void Post([FromForm]string serializedEventMessage)
-	        {
-	            var eventHubClient = EventHubClient.CreateFromConnectionString(connectionString, eventHubName);
-	            var eventData = new EventData(Encoding.UTF8.GetBytes(serializedEventMessage));
-	            eventHubClient.Send(eventData);
-	        }
-	    }
-	}
-	````
-
-	>**Note:** This Controller method is an HTTP POST and the [FromForm] attribute tells MVC to get the value of the serializedEventMessage from the form of the request. The event is a JSON object that is sent in the following step. Additionally, the Event Hub client sends the data to the Event Hub that you created before.
-
-1. Go to the **Details.cshtml** file located in the **Views / Store** folder and add the following code snippet at the end of the **scripts** section.
-
-	(Code Snippet - _IntelligentApplication - DetailsViewScript_)
-	<!-- mark:2-20 -->
-	````JavaScript
-	<script type="text/javascript">
-        $(function () {
-            function sendMessage(type){
-                var data = {
-                    type: type,
-										productId : @Html.Raw(Model.ProductId),
-                    title: '@Html.Raw(Model.Title)',
-                    category: '@Html.Raw(Model.Category.Name)',
-                };
-
-                var message = JSON.stringify(data);
-                $.post('/api/events', { 'serializedEventMessage': message });
-            }
-
-            sendMessage('view');
-
-            $('a.btn').click(function() {
-                sendMessage('add');
-            });
-        });
-    </script>
-	````
-
-	>**Note:** This client script calls the HTTP Post method that we previously created and sends a JSON object whenever a product is viewed or added to the cart.
-
+	_Generating events_
 
 <a name="Ex2Task3"></a>
-#### Task 3 - Verifying the website events in Event Hubs ####
+#### Task 3 - Verifying the website events in IoT Hubs ####
 
 In this task, you'll verify that the events are being sent to your Event Hub.
-
-1. In Visual Studio, run the solution.
-
-1. Once the site is loaded, navigate to a product and click in the "Add to Cart" button. You can do this for several items and each view and add to cart action will generate an event that will be sent to the Event Hub.
 
 1. In the [Azure classic portal](https://manage.windowsazure.com/), go to **Service Bus** and select the one you created before.
 
@@ -459,22 +149,6 @@ In this task, you'll verify that the events are being sent to your Event Hub.
 Now that we have a stream of events, you'll set up a Stream Analytics job to analyze these events in real-time.
 Azure Stream Analytics (ASA) is a fully managed, cost effective real-time event processing engine that helps to unlock deep insights from data. Stream Analytics makes it easy to set up real-time analytic computations on data streaming from devices, sensors, web sites, social media, applications, infrastructure systems, and more.
 
-<a name="Ex3Task1"></a>
-#### Task 1 - Configuring and starting event generator application ####
-
-In this task, you'll set up and run a console application that will randomly create and send events - such as add, view, checkout and remove - to your Event Hub. Later in this module, you'll visualize these events in Power BI.
-
-1. Open in Visual Studio the **PartsUnlimitedDataGen.sln** solution located at **Source / Ex3 / Begin** folder.
-
-1. Replace the **eventHubName** and  **eventHubConnectionString** values in **Program.cs** with the connection string and name of the **SendRule** from your Event Hub .
-
-1. Build the solution to trigger the download of required NuGet packages.
-
-1. Run the application.
-
-	![Generating events](Images/events-generator.png?raw=true "Generating events")
-
-	_Generating events_
 
 <a name="Ex3Task2"></a>
 #### Task 2 - Creating Stream Analytics job ####
