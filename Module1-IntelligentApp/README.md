@@ -36,8 +36,6 @@ The following is required to complete this module:
 [4]: https://github.com/paolosalvatori/ServiceBusExplorer
 
 
-
-
 <a name="Exercises"></a>
 ## Exercises ##
 This module includes the following exercises:
@@ -56,7 +54,7 @@ Estimated time to complete this module: **60 minutes**
 
 
 <a name="Exercise1"></a>
-### Exercise 2: Creating and integrating IoT Hubs ###
+### Exercise 1: Creating and integrating IoT Hubs ###
 
 Azure IoT Hubs is an event processing service that provides event and telemetry ingress to the cloud at massive scale, with low latency and high reliability. This service, used with other downstream services, is particularly useful in application instrumentation, user experience or workflow processing, and Internet of Things (IoT) scenarios.
 In this exercise, you will use Azure IoT Hubs to track the user behavior in your retail website when viewing a product and also when adding it to the cart.
@@ -93,7 +91,7 @@ In this task, you will create the Event Hub that will be used in the following t
 1. Your Event Hub is now created, and you have the connection strings you need to send and receive events.
 
 
-<a name="Ex2Task2"></a>
+<a name="Ex1Task2"></a>
 #### Task 2 - Configuring and starting event generator application ####
 
 In this task, you'll set up and run a console application that will randomly create and send events - such as add, view, checkout and remove - to your Event Hub. Later in this module, you'll visualize these events in Power BI.
@@ -110,7 +108,7 @@ In this task, you'll set up and run a console application that will randomly cre
 
 	_Generating events_
 
-<a name="Ex2Task3"></a>
+<a name="Ex1Task3"></a>
 #### Task 3 - Verifying the website events in IoT Hubs ####
 
 In this task, you'll verify that the events are being sent to your Event Hub.
@@ -143,15 +141,15 @@ In this task, you'll verify that the events are being sent to your Event Hub.
 
 	_Viewing the events list_
 
-<a name="Exercise3"></a>
-### Exercise 3: Using Stream Analytics to process your data ###
+<a name="Exercise2"></a>
+### Exercise 2: Using Stream Analytics to process your data ###
 
 Now that we have a stream of events, you'll set up a Stream Analytics job to analyze these events in real-time.
 Azure Stream Analytics (ASA) is a fully managed, cost effective real-time event processing engine that helps to unlock deep insights from data. Stream Analytics makes it easy to set up real-time analytic computations on data streaming from devices, sensors, web sites, social media, applications, infrastructure systems, and more.
 
 
-<a name="Ex3Task2"></a>
-#### Task 2 - Creating Stream Analytics job ####
+<a name="Ex2Task1"></a>
+#### Task 1 - Creating Stream Analytics job ####
 
 In this task, you'll set up a Stream Analytics job to analyze the events in real-time.
 
@@ -168,8 +166,8 @@ Specify the following values, and then click **Create**:
 
 1. The new job will be shown with a status of Created. Notice that the Start button is disabled. You must configure the job **Input**, **Output**, and **Query** before you can start the job.
 
-<a name="Ex3Task3"></a>
-#### Task 3 - Specifying job Input ####
+<a name="Ex2Task2"></a>
+#### Task 2 - Specifying job Input ####
 
 In this task, you'll specify a job Input using the Event Hub you previously created.
 
@@ -193,8 +191,8 @@ In this task, you'll specify a job Input using the Event Hub you previously crea
 
 1. Click **Create**.
 
-<a name="Ex3Task4"></a>
-#### Task 4 - Specifying job Query ####
+<a name="Ex2Task3"></a>
+#### Task 3 - Specifying job Query ####
 
 Stream Analytics supports a simple, declarative query model for describing transformations for real-time processing. To learn more about the language, see the [Azure Stream Analytics Query Language Reference](https://msdn.microsoft.com/library/dn834998.aspx).
 In this task, you'll create a query that extracts events from your input stream.
@@ -216,8 +214,8 @@ In this task, you'll create a query that extracts events from your input stream.
 
 	>**Note:** In this query you're projecting all fields in the payload of the event to the output, you could read some of them of them by using _SELECT [field name]_.
 
-<a name="Ex3Task5"></a>
-#### Task 5 - Specifying job Output ####
+<a name="Ex2Task4"></a>
+#### Task 4 - Specifying job Output ####
 
 In this task, you'll create an output that will store the query results in Blob storage.
 
@@ -246,8 +244,8 @@ In this task, you'll create an output that will store the query results in Blob 
 
 	_Creating Stream Analytics Output_
 
-<a name="Ex3Task6"></a>
-#### Task 6 - Starting the job for real time processing ####
+<a name="Ex2Task5"></a>
+#### Task 5 - Starting the job for real time processing ####
 
 In this task you'll run the Stream Analytics job and view the output in Visual Studio.
 
@@ -269,12 +267,12 @@ In this task you'll run the Stream Analytics job and view the output in Visual S
 
 	_Reviewing the Stream Analytics job output_
 
-<a name="Exercise4"></a>
-### Exercise 4: Visualizing your data with Power BI ###
+<a name="Exercise3"></a>
+### Exercise 3: Visualizing your data with Power BI ###
 
 In this exercise, you'll use Azure Stream Analytics with Microsoft Power BI. You will learn how to build a live dashboard quickly.
 
-<a name="Ex4Task1"></a>
+<a name="Ex3Task1"></a>
 #### Task 1 - Adding Power BI output to Stream Analytics ####
 
 In this task, you'll add a new output to your Stream Analytics job.
@@ -319,7 +317,7 @@ In this task, you'll add a new output to your Stream Analytics job.
 
 	>**Note:** As we are grouping the results, a window type is required. See [GROUP BY](https://msdn.microsoft.com/library/azure/dn835023.aspx). The query uses a 10-minute tumbling window. The INTO clause tells Stream Analytics which of the outputs to write the data from this statement. The WITH statement is to reuse the results for different statements; in this case we could used it for both outputs but we'll keep storing all fields into the blob.
 
-<a name="Ex4Task2"></a>
+<a name="Ex3Task2"></a>
 #### Task 2 - Creating the dashboard in Power BI ####
 
 1. Go to [PowerBI.com](https://powerbi.microsoft.com/) and login with your work or school account. If the Stream Analytics job query outputs results, you'll see your dataset is already created:
