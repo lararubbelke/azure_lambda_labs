@@ -1,5 +1,6 @@
 ﻿namespace PartsUnlimitedDataGen
 {
+    using Microsoft.Azure.Devices.Client;
     using System;
     using System.Threading;
     using System.Text;
@@ -10,19 +11,32 @@
     using System.Linq;
     using System.Collections.Generic;
 
+
     public class Program
     {
-        static string eventHubName = "lararukingesteventhub1329302";
-        static string eventHubConnectionString = "Endpoint=sb://lararuk1329302.servicebus.windows.net/;SharedAccessKeyName=manage;SharedAccessKey=LO379SRPiZ6388c3F7b3cJLk2ic9N05OzjMR0QXxM7c=";
-        static EventHubClient eventHubClient = null;
+        static DeviceClient deviceClient;
+        static string iotHubUri = "lararuk.azure-devices.net";
+        static string deviceKey = "NhumXOEuOaawD+8Bpy0jcHwfup9kXzJCX+z2ASq8208=";
+
+//        static string connectionString = "HostName=lararuk.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=8SlHU6gjGCO/vJBaWoSfhstBuNTkq5XgEV0N842Nkm0=";
+//        static string iotHubD2cEndpoint = "messages/events";
+ //       static EventHubClient eventHubClient;
+
+        //static string eventHubName = "iothub-ehub-lararuk-48714-fa69a028e0";
+        //static string eventHubConnectionString = "Endpoint=sb://ihsuprodbyres034dednamespace.servicebus.windows.net/;SharedAccessKeyName=iothubowner;SharedAccessKey=8SlHU6gjGCO/vJBaWoSfhstBuNTkq5XgEV0N842Nkm0=";
+        //static EventHubClient eventHubClient = null;
+
 
         static void Main(string[] args)
         {
-            Console.WriteLine("DataGen is running");
 
+            
             try
             {
-                eventHubClient = EventHubClient.CreateFromConnectionString(eventHubConnectionString, eventHubName);
+                Console.WriteLine("Simulated device\n");
+                deviceClient = DeviceClient.Create(iotHubUri, new DeviceAuthenticationWithRegistrySymmetricKey("myFirstDevice", deviceKey));
+
+//                eventHubClient = EventHubClient.CreateFromConnectionString(eventHubConnectionString, eventHubName);
 
                 // Randomly create instances of the store actions, such as add view remove and checkout a product, 
                 // convert it into a JSON string and sends to the Event Hub.
@@ -64,15 +78,18 @@
             }
         }
 
-        private static void SendingRandomMessages(EventMessage eventMessage)
+        private static async void SendingRandomMessages(EventMessage eventMessage)
         {
             try
             {
-                var message = JsonConvert.SerializeObject(eventMessage, new JsonSerializerSettings() { ContractResolver = new CamelCasePropertyNamesContractResolver() } );
+                var messagestring = JsonConvert.SerializeObject(eventMessage, new JsonSerializerSettings() { ContractResolver = new CamelCasePropertyNamesContractResolver() } );
 
-                EventData data = new EventData(Encoding.UTF8.GetBytes(message));
+                //EventData data = new EventData(Encoding.UTF8.GetBytes(message));
+                var message = new Message(Encoding.ASCII.GetBytes(messagestring));
 
-                eventHubClient.Send(data);
+                await deviceClient.SendEventAsync(message);
+
+                //eventHubClient.Send(data);
                 Console.WriteLine("Sent message: {0}.", message);
             }
             catch (Exception exception)
@@ -80,5 +97,6 @@
                 Console.WriteLine(DateTime.Now.ToString() + " > Exception: " + exception.ToString());
             }
         }
+
+       }
     }
-}
