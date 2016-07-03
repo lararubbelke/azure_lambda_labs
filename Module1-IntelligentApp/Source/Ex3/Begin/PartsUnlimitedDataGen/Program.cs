@@ -43,23 +43,18 @@
                 deviceId = Environment.MachineName;
 
                 string key = GetDocumentDBKey(); //will blow up if no key available
-
-             
-
-                //string iotHubUri = $"HostName={hubhostName};DeviceId={deviceId};SharedAccessKey={key}";
-               // string iotHubUri = string.Format("HostName={0};DeviceId={1};SharedAccessKey={2}", hubhostName, deviceId, key);
+                
                 deviceClient = DeviceClient.Create(hubhostName,new DeviceAuthenticationWithRegistrySymmetricKey(deviceId, key));
-                //                eventHubClient = EventHubClient.CreateFromConnectionString(eventHubConnectionString, eventHubName);
-
+           
                 // Randomly create instances of the store actions, such as add view remove and checkout a product, 
-                // convert it into a JSON string and sends to the Event Hub.
+                // convert it into a JSON string and sends to the IoT Hub.
                 GenerateRandomEvents();
                 Console.ReadLine();
 
             }
             catch (Exception e)
             {
-                Console.WriteLine("Exception occured while creating the IoT Hub client: " + e.ToString());
+                Console.WriteLine("Exception occured: " + e.ToString());
                 
             }
             finally
