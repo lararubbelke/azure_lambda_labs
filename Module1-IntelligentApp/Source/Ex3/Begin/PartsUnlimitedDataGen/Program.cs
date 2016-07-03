@@ -10,47 +10,102 @@
     using PartsUnlimited.Models;
     using System.Linq;
     using System.Collections.Generic;
-
+    using Microsoft.Azure.Documents.Client.TransientFaultHandling;
+    using Microsoft.Azure.Documents;
+    using System.Configuration;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Client.TransientFaultHandling.Strategies;
+    using Microsoft.Practices.EnterpriseLibrary.TransientFaultHandling;
 
     public class Program
     {
+        static string primarykey = string.Empty;
+        static string EndpointUrl = "";
+        static string AuthorizationKey = "";
+        static IReliableReadWriteDocumentClient docclient;
+        static Database docdatabase;
+        static DocumentCollection collection;
+        static string databaseId;
+        static string collectionId;
+        static string hubhostName = string.Empty;
+        static string deviceId = string.Empty;
         static DeviceClient deviceClient;
-        static string iotHubUri = "lararuk.azure-devices.net";
-        static string deviceKey = "NhumXOEuOaawD+8Bpy0jcHwfup9kXzJCX+z2ASq8208=";
-
-//        static string connectionString = "HostName=lararuk.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=8SlHU6gjGCO/vJBaWoSfhstBuNTkq5XgEV0N842Nkm0=";
-//        static string iotHubD2cEndpoint = "messages/events";
- //       static EventHubClient eventHubClient;
-
-        //static string eventHubName = "iothub-ehub-lararuk-48714-fa69a028e0";
-        //static string eventHubConnectionString = "Endpoint=sb://ihsuprodbyres034dednamespace.servicebus.windows.net/;SharedAccessKeyName=iothubowner;SharedAccessKey=8SlHU6gjGCO/vJBaWoSfhstBuNTkq5XgEV0N842Nkm0=";
-        //static EventHubClient eventHubClient = null;
-
+ 
 
         static void Main(string[] args)
         {
-
+            /* the only way I can send data is by going through DocDB for my key */
             
             try
             {
                 Console.WriteLine("Simulated device\n");
-                deviceClient = DeviceClient.Create(iotHubUri, new DeviceAuthenticationWithRegistrySymmetricKey("myFirstDevice", deviceKey));
+                hubhostName = ConfigurationManager.AppSettings["hubhostname"];
+                deviceId = Environment.MachineName;
 
-//                eventHubClient = EventHubClient.CreateFromConnectionString(eventHubConnectionString, eventHubName);
+                string key = GetDocumentDBKey(); //will blow up if no key available
+
+             
+
+                //string iotHubUri = $"HostName={hubhostName};DeviceId={deviceId};SharedAccessKey={key}";
+               // string iotHubUri = string.Format("HostName={0};DeviceId={1};SharedAccessKey={2}", hubhostName, deviceId, key);
+                deviceClient = DeviceClient.Create(hubhostName,new DeviceAuthenticationWithRegistrySymmetricKey(deviceId, key));
+                //                eventHubClient = EventHubClient.CreateFromConnectionString(eventHubConnectionString, eventHubName);
 
                 // Randomly create instances of the store actions, such as add view remove and checkout a product, 
                 // convert it into a JSON string and sends to the Event Hub.
                 GenerateRandomEvents();
+                Console.ReadLine();
 
             }
             catch (Exception e)
             {
-                Console.WriteLine("Exception occured while creating Event Hubs client: " + e.ToString());
+                Console.WriteLine("Exception occured while creating the IoT Hub client: " + e.ToString());
+                
             }
             finally
             {
                 Console.WriteLine("DataGen has stopped");
             }
+
+            Console.ReadLine();
+        }
+
+        static string GetDocumentDBKey()
+        {
+            EndpointUrl = ConfigurationManager.AppSettings["docdburi"];
+            AuthorizationKey = ConfigurationManager.AppSettings["docdbkey"];
+            databaseId = ConfigurationManager.AppSettings["databaseId"];
+            collectionId = ConfigurationManager.AppSettings["collectionId"];
+
+
+            docclient = CreateClient(EndpointUrl, AuthorizationKey);
+
+            Database database = docclient.CreateDatabaseQuery().Where(db => db.Id == databaseId).ToArray().FirstOrDefault();
+            collection = docclient.CreateDocumentCollectionQuery(database.SelfLink).Where(c => c.Id == collectionId).ToArray().FirstOrDefault();
+
+            var request = docclient.CreateDocumentQuery<DeviceDoc>(collection.SelfLink)
+                      .Where(f => f.deviceId == deviceId);
+
+            if (request.ToList().Count > 1) throw new ApplicationException("Too many documents for same DeviceID.  Should only be 1 document");
+
+            if (request.ToList().Count == 0) throw new ApplicationException("You have not registered this device.  Please complete registration first.");
+
+            var deviceDoc = request.ToList().FirstOrDefault();
+
+
+            return deviceDoc.authentication.symmetricKey.primaryKey;
+        }
+
+        private static IReliableReadWriteDocumentClient CreateClient(string uri, string key)
+        {
+            ConnectionPolicy policy = new ConnectionPolicy()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConnectionProtocol = Protocol.Tcp
+            };
+            var documentClient = new DocumentClient(new Uri(uri), key, policy);
+            var documentRetryStrategy = new DocumentDbRetryStrategy(RetryStrategy.DefaultExponential) { FastFirstRetry = true };
+            return documentClient.AsReliable(documentRetryStrategy);
         }
 
         private static void GenerateRandomEvents()
