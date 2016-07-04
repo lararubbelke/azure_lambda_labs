@@ -18,10 +18,10 @@ In this module, you'll use Data Factory to compose services into managed data fl
 ### Objectives ###
 In this module, you'll see how to:
 
-- Create a **HDInsight Cluster** and issue a **Hive** query to do analytics on your data
-- Create an **Azure Data Warehouse** and load data from Azure storage
-- Create an **Azure Data Factory** and orchestrate an **Azure Data Factory** workflow
-- Automate data movement from **HDInsight** to **SQL Data Warehouse**
+- Create an **Azure Data Factory**
+- Create a **HDInsight Hive** query to do analytics on your data
+- Orchestrate an **Azure Data Factory** workflow
+- Data movement from **HDInsight** to a **SQL Data Warehouse**
 - Use the data in **SQL Data Warehouse** to generate **Power BI** visualizations
 
 <a name="Prerequisites"></a>
@@ -207,7 +207,7 @@ You should now have sample data and a new storage account with two blob containe
 1. Click **Save**.
 
 <a name="ManualSetupSqlDWScript"></a>
-#### Manual Setup 4: Manually create the tables and stored procedures in SQL Data Warehouse ####
+#### Manual Setup 4: Manually creating the tables and stored procedures in SQL Data Warehouse ####
 
 Once the SQL Data Warehouse is created, you need to create the tables and stored procedures that will be used in this module.
 
@@ -282,7 +282,7 @@ Using the setup script you can fully setup the environment by creating the sampl
 
 	_HDI cluster in progress_
 
-> **Note:** to clean your subscription just delete the resource group you created for all the associated resources.
+> **Note:** to clean your subscription just delete the **DataCodeLab** resource group and all the associated resources.
 
 Now you start executing the exercises.
 
@@ -292,207 +292,15 @@ Now you start executing the exercises.
 ## Exercises ##
 This module includes the following exercises:
 
-1. [Creating Hive code to do analytics on your data](#Exercise1)
-1. [Loading and querying data in Azure SQL Data Warehouse](#Exercise2)
-1. [Creating Azure Data Factory](#Exercise3)
-1. [Orchestrating Azure Data Factory workflow](#Exercise4)
-1. [Using the data in the warehouse to generate Power BI visualizations](#Exercise5)
+1. [Creating Azure Data Factory](#Exercise1)
+1. [Creating Hive code to do analytics on your data](#Exercise2)
+1. [Orchestrating Azure Data Factory workflow](#Exercise3)
+1. [Using the data in the warehouse to generate Power BI visualizations](#Exercise4)
 
 Estimated time to complete this module: **60 minutes**
 
 <a name="Exercise1"></a>
-### Exercise 1: Creating Hive code to do analytics on your data ###
-
-**HDInsight** is a cloud implementation on **Microsoft Azure** of the rapidly expanding **Apache Hadoop** technology stack that is the go-to solution for big data analysis.
-
-**Apache Hive** is a data warehouse system for Hadoop, which enables data summarization, querying, and analysis of data by using **HiveQL** (a query language similar to SQL). Hive can be used to interactively explore your data or to create reusable batch processing jobs.
-
-In this exercise, you'll create a **Hive activity** using HQL script code to generate the output data in the Azure Storage linked service.
-
-<a name="Ex1Task1"></a>
-#### Task 1 - Writing a Hive query to analyze the logs ####
-
-In this task, you'll write a Hive query to generate product stats (views and cart additions) from the Parts Unlimited logs.
-
-1. Navigate to the HDInsight server dashboard: https://**{hdiclustername}**.azurehdinsight.net/. If the HDI server was created with _Linux_ the **Ambari** portal will be loaded.
-
-1. Log in using the username 'admin' and password 'P@ssword123'
-
-1. If the HDI cluster was created using **Hadoop on Windows** (default when using Setup scripts), follow these steps:
-
-	1. Open the **Hive Editor** using the link in the top bar if the HDI cluster is running _Windows_. 
-
-	1. Write HQL code to create a partitioned table for the existing blobs and then parse the JSON format. Paste the snippet below, replace the **<****StorageAccountName****>** and update the partition to be of a valid date and location (where the input logs were uploaded according to the current date):
-
-		````SQL
-		DROP TABLE IF EXISTS LogsRaw;
-		CREATE EXTERNAL TABLE LogsRaw (jsonentry string) 
-		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/03/30";
-
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=03, day=30) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/03/30';
-
-		SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT),
-				 get_json_object(jsonentry, "$.title"),
-				 get_json_object(jsonentry, "$.category"),
-				 get_json_object(jsonentry, "$.type"),
-				 CAST(get_json_object(jsonentry, "$.totalClicked") as BIGINT)
-		FROM LogsRaw;
-		````
-
-		> **Note**: The CREATE EXTERNAL TABLE command that we used here, creates an external table, the data file can be located outside the default container and does not move the data file.
-
-		![Hive editor](Images/ex2task1-hive-editor.png?raw=true "Hive editor")
-
-		_Hive editor_
-
-	1. Enter a name, e.g. "**Product Stats**", for the query and click **Submit** to create a job session for the query execution.
-
-	1. Notice the new entry in the **Job Session** table and the status. It will say Initializing and then, Running.
-
-		![Job session state](Images/ex2task1-job-session.png?raw=true "Job session state")
-
-		_Job session state_
-
-	1. Wait for the status to be Completed, click the query name to view the details. Notice the **Job Output** with the resulting values.
-
-		![Query output](Images/ex2task1-query-output.png?raw=true "Query output")
-
-		_Query output_
-
-1. If the HDI cluster was created using **Hadoop on Linux**, follow these steps:
-
-	1. Select the **Hive view** in the views button at the top bar.
-
-		![Hive view option in Ambari](Images/ex2task1-ambari-hive-option.png?raw=true "Hive view option in Ambari")
-
-		_Hive view option in Ambari_
-
-	1. In the new worksheet, write HQL code to create a partitioned table for the existing blobs and then parse the JSON format. Paste the snippet below, replace the **<****StorageAccountName****>** and update the partition to be of a valid date and location (where the input logs were uploaded according to the current date):
-
-		````SQL
-		DROP TABLE IF EXISTS LogsRaw;
-		CREATE EXTERNAL TABLE LogsRaw (jsonentry string) 
-		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/03/30";
-
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=03, day=30) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/03/30';
-
-		SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT),
-				 get_json_object(jsonentry, "$.title"),
-				 get_json_object(jsonentry, "$.category"),
-				 get_json_object(jsonentry, "$.type"),
-				 CAST(get_json_object(jsonentry, "$.totalClicked") as BIGINT)
-		FROM LogsRaw;
-		````
-
-		> **Note**: The CREATE EXTERNAL TABLE command that we used here, creates an external table, the data file can be located outside the default container and does not move the data file.
-
-		![Hive editor](Images/ex2task1-ambari-hive-editor.png?raw=true "Hive editor")
-
-		_Hive editor_
-
-	1. Click **Execute** to run the query.
-
-	1. Wait for the status to be Succeeded, select the results tab in the "Query Process Results" panel to show the values.
-
-		![Query output](Images/ex2task1-ambari-query-output.png?raw=true "Query output")
-
-		_Query output_
-
-	> **Note:** Ambari portal offers many features over the Windows dashboard. You can create advanced visualization of the data results using charts, customize the Hive settings, create customized views, among many other options. To learn more about Ambari portal go to [Manage HDInsight clusters by using the Ambari Web UI](https://azure.microsoft.com/documentation/articles/hdinsight-hadoop-manage-ambari/).
-
-1. Write a new Hive query to create the output partitioned table using a columns schema matching the output of the previous query. Paste the snippet below and replace the **StorageAccountName** placeholder.
-
-	````SQL
-	DROP TABLE IF EXISTS OutputTable;
-	CREATE EXTERNAL TABLE OutputTable (
-		productid int,
-		title string,
-		category string,
-		type string,
-		totalClicked int
-	) PARTITIONED BY (year int, month int, day int) 
-	ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
-	STORED AS TEXTFILE LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/logs';
-	````
-
-1. **Submit** or **execute** the Hive query to create the output table.
-
-<a name="Ex1Task2"></a>
-#### Task 2 - Create the HQL script for the Hive Activity ####
-
-In this task, you'll reuse the Hive query to generate the HQL script for the Hive activity that will generate the output stats in a new storage blob.
-
-1. Open the file located in **Setup\Assets\Scripts\logstocsv.hql** and review its content:
-
-	````SQL
-	INSERT OVERWRITE TABLE OutputTable Partition (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day})
-SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT) as productid,
-         get_json_object(jsonentry, "$.title") as title,
-         get_json_object(jsonentry, "$.category") as category,
-         get_json_object(jsonentry, "$.type") as type,
-         CAST(get_json_object(jsonentry, "$.totalClicked") as BIGINT) as totalClicked
-FROM LogsRaw
-	````
-
-    Notice this script is, essentially, the Hive query you wrote and tested in the previous task but it insert the results in the output table.
-
-1. Open the file located in **Setup\Assets\Scripts\addpartitions.hql** and review its content:
-
-	````SQL
-	ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day}) LOCATION 'wasb://partsunlimited@${hiveconf:StorageAccountName}.blob.core.windows.net/logs/${hiveconf:Year}/${hiveconf:Month}/${hiveconf:Day}';
-
-	ALTER TABLE OutputTable ADD IF NOT EXISTS PARTITION (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day}) LOCATION 'wasb://processeddata@${hiveconf:StorageAccountName}.blob.core.windows.net/logs/${hiveconf:Year}/${hiveconf:Month}/${hiveconf:Day}';
-	````
-
-    This script adds the partitiones by date to the input and output tables. The storage account name and all the required date components for the partitiones will be passed as parameters by the Hive action running in the Data Factory.
-
-1. These script was already uploaded to your storage during the module setup by using the manual steps or the **Setup.cmd** script. Verify the HQL script was uploaded by using the an storage explorer tool such as **Azure Storage Explorer** to navigate to the **Scripts** folder in the **partsunlimited** container.
-
-	1. Open **Azure Storage Explorer**, right click on "Storage Account" tree item and select **Attach External Storage...**
-
-		![Attaching to external storage](Images/ex2task2-explorer-add-account.png?raw=true "Attaching to external storage")
-
-		_Attaching to external storage_
-
-		> **Note:** You can also add an Storage Account by login to your Azure accounts and pick storage accounts. To do this, click the settings button (the "wrench" symbol). 
-
-		> ![Settings](Images/azure-storage-explorer-settings.png?raw=true "Settings")
-
-		> _Settings_
-
-		> ![Add an Account](Images/azure-storage-explorer-add-account.png?raw=true "Add an Account")
-
-		> _Add an Account_
-
-	1. Enter the account name and key of the storage account you created/reused in the setup steps (leave the default endpoint options). Then click **OK** to add the account to Azure Explorer.
-
-		![Enter storage account name and key](Images/ex2task2-explorer-connect-account-key.png?raw=true "Enter storage account name and key")
-
-		_Enter storage account name and key_
-
-	1. In the left pane navigate to the **partsunlimited** container, open the **Scripts** folder and verify the **logstocsv.hql** file is present.
-
-		![Verify HQL script file is in place](Images/ex2task2-explorer-scripts.png?raw=true "Verify HQL script file is in place")
-
-		_Verify HQL script file is in place_
-
-<a name="Exercise2"></a>
-### Exercise 2: Loading and querying data in Azure SQL Data Warehouse ###
-
-**Azure SQL Data Warehouse** ...
-
-**Polybase** ...
-
-In this exercise, you'll create an **External Table** using Polybase. You will issue a few sample queries, and then build a new table using the Create Table As Select (CTAS) syntax. 
-
-<a name="Ex2Task1"></a>
-#### Task 1 - Set up Polybase ####
-
-<a name="Ex2Task2"></a>
-#### Task 1 - Create a new table ####
-
-<a name="Exercise3"></a>
-### Exercise 3: Creating Azure Data Factory ###
+### Exercise 1: Creating Azure Data Factory ###
 
 Azure Data Factory has a few key entities that work together to define the input and output data, processing events, and the schedule and resources required to execute the desired data flow.
 
@@ -511,7 +319,7 @@ _Data factory key concepts_
 > **Note:** If you need to skip the manual instructions to create the data factory and provisioning of the linked services, datasets and pipelines. You can run the CreateDataFactory.cmd script to quickly provision it.
 
 
-<a name="Ex3Task1"></a>
+<a name="Ex1Task1"></a>
 #### Task 1 - Creating the data factory in Azure Portal ####
 
 In this task, you create a data factory to orchestrate the linked services and data transformation activities.
@@ -530,7 +338,7 @@ In this task, you create a data factory to orchestrate the linked services and d
 
 1. After the creation is complete, you'll find the data factory in the dashboard.
 
-<a name="Ex3Task2"></a>
+<a name="Ex1Task2"></a>
 #### Task 2 - Adding the linked services ####
 
 In this task, you'll create the linked services.
@@ -625,7 +433,7 @@ In this task, you'll create the linked services.
 
     > **Note:** if the deployment fails, it may be due to the HDI cluster is still being provisioned. Verify the status in the portal.
 
-<a name="Ex3Task3"></a>
+<a name="Ex1Task3"></a>
 #### Task 3 - Creating the input and output datasets ####
 
 In this task, you'll create the input and output tables corresponding to the linked services.
@@ -905,12 +713,189 @@ In this task, you'll create the input and output tables corresponding to the lin
 
 Now you finished creating the input/output datasets and the associated linked services for the pipelines of the Data Factory. In the upcoming exercises you will create the pipelines using the datasets and linked services you just created.
 
-<a name="Exercise4"></a>
-### Exercise 4: **Orchestrating Azure Data Factory workflow** ###
+<a name="Exercise2"></a>
+### Exercise 2: Creating Hive code to do analytics on your data ###
+
+**HDInsight** is a cloud implementation on **Microsoft Azure** of the rapidly expanding **Apache Hadoop** technology stack that is the go-to solution for big data analysis.
+
+**Apache Hive** is a data warehouse system for Hadoop, which enables data summarization, querying, and analysis of data by using **HiveQL** (a query language similar to SQL). Hive can be used to interactively explore your data or to create reusable batch processing jobs.
+
+In this exercise, you'll create a **Hive activity** using HQL script code to generate the output data in the Azure Storage linked service.
+
+<a name="Ex2Task1"></a>
+#### Task 1 - Writing a Hive query to analyze the logs ####
+
+In this task, you'll write a Hive query to generate product stats (views and cart additions) from the Parts Unlimited logs.
+
+1. Navigate to the HDInsight server dashboard: https://**{hdiclustername}**.azurehdinsight.net/. If the HDI server was created with _Linux_ the **Ambari** portal will be loaded.
+
+1. Log in using the username 'admin' and password 'P@ssword123'
+
+1. If the HDI cluster was created using **Hadoop on Windows** (default when using Setup scripts), follow these steps:
+
+	1. Open the **Hive Editor** using the link in the top bar if the HDI cluster is running _Windows_. 
+
+	1. Write HQL code to create a partitioned table for the existing blobs and then parse the JSON format. Paste the snippet below, replace the **<****StorageAccountName****>** and update the partition to be of a valid date and location (where the input logs were uploaded according to the current date):
+
+		````SQL
+		DROP TABLE IF EXISTS LogsRaw;
+		CREATE EXTERNAL TABLE LogsRaw (jsonentry string) 
+		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/03/30";
+
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=03, day=30) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/03/30';
+
+		SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT),
+				 get_json_object(jsonentry, "$.title"),
+				 get_json_object(jsonentry, "$.category"),
+				 get_json_object(jsonentry, "$.type"),
+				 CAST(get_json_object(jsonentry, "$.totalClicked") as BIGINT)
+		FROM LogsRaw;
+		````
+
+		> **Note**: The CREATE EXTERNAL TABLE command that we used here, creates an external table, the data file can be located outside the default container and does not move the data file.
+
+		![Hive editor](Images/ex2task1-hive-editor.png?raw=true "Hive editor")
+
+		_Hive editor_
+
+	1. Enter a name, e.g. "**Product Stats**", for the query and click **Submit** to create a job session for the query execution.
+
+	1. Notice the new entry in the **Job Session** table and the status. It will say Initializing and then, Running.
+
+		![Job session state](Images/ex2task1-job-session.png?raw=true "Job session state")
+
+		_Job session state_
+
+	1. Wait for the status to be Completed, click the query name to view the details. Notice the **Job Output** with the resulting values.
+
+		![Query output](Images/ex2task1-query-output.png?raw=true "Query output")
+
+		_Query output_
+
+1. If the HDI cluster was created using **Hadoop on Linux**, follow these steps:
+
+	1. Select the **Hive view** in the views button at the top bar.
+
+		![Hive view option in Ambari](Images/ex2task1-ambari-hive-option.png?raw=true "Hive view option in Ambari")
+
+		_Hive view option in Ambari_
+
+	1. In the new worksheet, write HQL code to create a partitioned table for the existing blobs and then parse the JSON format. Paste the snippet below, replace the **<****StorageAccountName****>** and update the partition to be of a valid date and location (where the input logs were uploaded according to the current date):
+
+		````SQL
+		DROP TABLE IF EXISTS LogsRaw;
+		CREATE EXTERNAL TABLE LogsRaw (jsonentry string) 
+		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/03/30";
+
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=03, day=30) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/03/30';
+
+		SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT),
+				 get_json_object(jsonentry, "$.title"),
+				 get_json_object(jsonentry, "$.category"),
+				 get_json_object(jsonentry, "$.type"),
+				 CAST(get_json_object(jsonentry, "$.totalClicked") as BIGINT)
+		FROM LogsRaw;
+		````
+
+		> **Note**: The CREATE EXTERNAL TABLE command that we used here, creates an external table, the data file can be located outside the default container and does not move the data file.
+
+		![Hive editor](Images/ex2task1-ambari-hive-editor.png?raw=true "Hive editor")
+
+		_Hive editor_
+
+	1. Click **Execute** to run the query.
+
+	1. Wait for the status to be Succeeded, select the results tab in the "Query Process Results" panel to show the values.
+
+		![Query output](Images/ex2task1-ambari-query-output.png?raw=true "Query output")
+
+		_Query output_
+
+	> **Note:** Ambari portal offers many features over the Windows dashboard. You can create advanced visualization of the data results using charts, customize the Hive settings, create customized views, among many other options. To learn more about Ambari portal go to [Manage HDInsight clusters by using the Ambari Web UI](https://azure.microsoft.com/documentation/articles/hdinsight-hadoop-manage-ambari/).
+
+1. Write a new Hive query to create the output partitioned table using a columns schema matching the output of the previous query. Paste the snippet below and replace the **StorageAccountName** placeholder.
+
+	````SQL
+	DROP TABLE IF EXISTS OutputTable;
+	CREATE EXTERNAL TABLE OutputTable (
+		productid int,
+		title string,
+		category string,
+		type string,
+		totalClicked int
+	) PARTITIONED BY (year int, month int, day int) 
+	ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
+	STORED AS TEXTFILE LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/logs';
+	````
+
+1. **Submit** or **execute** the Hive query to create the output table.
+
+<a name="Ex2Task2"></a>
+#### Task 2 - Create the HQL script for the Hive Activity ####
+
+In this task, you'll reuse the Hive query to generate the HQL script for the Hive activity that will generate the output stats in a new storage blob.
+
+1. Open the file located in **Setup\Assets\Scripts\logstocsv.hql** and review its content:
+
+	````SQL
+	INSERT OVERWRITE TABLE OutputTable Partition (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day})
+SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT) as productid,
+         get_json_object(jsonentry, "$.title") as title,
+         get_json_object(jsonentry, "$.category") as category,
+         get_json_object(jsonentry, "$.type") as type,
+         CAST(get_json_object(jsonentry, "$.totalClicked") as BIGINT) as totalClicked
+FROM LogsRaw
+	````
+
+    Notice this script is, essentially, the Hive query you wrote and tested in the previous task but it insert the results in the output table.
+
+1. Open the file located in **Setup\Assets\Scripts\addpartitions.hql** and review its content:
+
+	````SQL
+	ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day}) LOCATION 'wasb://partsunlimited@${hiveconf:StorageAccountName}.blob.core.windows.net/logs/${hiveconf:Year}/${hiveconf:Month}/${hiveconf:Day}';
+
+	ALTER TABLE OutputTable ADD IF NOT EXISTS PARTITION (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day}) LOCATION 'wasb://processeddata@${hiveconf:StorageAccountName}.blob.core.windows.net/logs/${hiveconf:Year}/${hiveconf:Month}/${hiveconf:Day}';
+	````
+
+    This script adds the partitiones by date to the input and output tables. The storage account name and all the required date components for the partitiones will be passed as parameters by the Hive action running in the Data Factory.
+
+1. These script was already uploaded to your storage during the module setup by using the manual steps or the **Setup.cmd** script. Verify the HQL script was uploaded by using the an storage explorer tool such as **Azure Storage Explorer** to navigate to the **Scripts** folder in the **partsunlimited** container.
+
+	1. Open **Azure Storage Explorer**, right click on "Storage Account" tree item and select **Attach External Storage...**
+
+		![Attaching to external storage](Images/ex2task2-explorer-add-account.png?raw=true "Attaching to external storage")
+
+		_Attaching to external storage_
+
+		> **Note:** You can also add an Storage Account by login to your Azure accounts and pick storage accounts. To do this, click the settings button (the "wrench" symbol). 
+
+		> ![Settings](Images/azure-storage-explorer-settings.png?raw=true "Settings")
+
+		> _Settings_
+
+		> ![Add an Account](Images/azure-storage-explorer-add-account.png?raw=true "Add an Account")
+
+		> _Add an Account_
+
+	1. Enter the account name and key of the storage account you created/reused in the setup steps (leave the default endpoint options). Then click **OK** to add the account to Azure Explorer.
+
+		![Enter storage account name and key](Images/ex2task2-explorer-connect-account-key.png?raw=true "Enter storage account name and key")
+
+		_Enter storage account name and key_
+
+	1. In the left pane navigate to the **partsunlimited** container, open the **Scripts** folder and verify the **logstocsv.hql** file is present.
+
+		![Verify HQL script file is in place](Images/ex2task2-explorer-scripts.png?raw=true "Verify HQL script file is in place")
+
+		_Verify HQL script file is in place_
+
+
+<a name="Exercise3"></a>
+### Exercise 3: **Orchestrating Azure Data Factory workflow** ###
 
 **Azure Data Factory** enables you to compose data movement and data processing tasks as a data driven workflow. In this exercise, you'll learn how to build your first pipeline that uses HDInsight to transform and analyze the logs from the Parts Unlimited web site.
 
-<a name="Ex4Task1"></a>
+<a name="Ex3Task1"></a>
 #### Task 1 - Create the pipeline that will run the Hive activity ####
 
 **Pipeline** is a logical grouping of Activities. They are used to group activities into a unit that performs a task.
@@ -1025,7 +1010,7 @@ In this task, you'll create the pipeline to generate the stats output using a _H
 
 1. Click **Deploy** on the toolbar to create and deploy the pipeline.
 
-<a name="Ex4Task2"></a>
+<a name="Ex3Task2"></a>
 #### Task 2 - Create a new pipeline to move the HDI output to SQL Data Warehouse ####
 In this task, you'll create a new pipeline to move the Hive activity output (stored in a blob) to the SQL Data Warehouse database so it can be consumed using Power BI in the next exercise.
 
@@ -1080,7 +1065,7 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
 
     You can zoom in, zoom out, zoom to 100%, zoom to fit, automatically position pipelines and tables, and show lineage information (highlights upstream and downstream items of selected items). You can double-click an object (input/output table or pipeline) to see its properties.
 
-<a name="Ex4Task3"></a>
+<a name="Ex3Task3"></a>
 #### Task 3 - Monitoring the Data Factory ####
 
 With the Monitoring and Managing app you can easily monitor and manage your data factory pipelines, this app:
@@ -1136,7 +1121,7 @@ In this task, you'll explore the features of the Monitoring App using the data f
 
 There are more features to continue exploring in the Monitoring App. You can also configure _alerts_ to create email notifications on various events (failure, success, etc.), re-run failed activities and even configure the app layout by dragging the panes.
 
-<a name="Ex4Task4"></a>
+<a name="Ex3Task4"></a>
 #### Task 4 - Executing Stored Procedure in SQL Data Warehouse ####
 In this task you will add a new pipeline to run the stored procedure that populates the ProductStats table in the SQL Data Warehouse.
 
@@ -1226,12 +1211,12 @@ You can use the SQL Server Stored Procedure activity in a Data Factory pipeline 
 
 	_New pipeline output slices_
 
-<a name="Exercise5"></a>
-### Exercise 5: Using the data in the warehouse to generate Power BI visualizations ###
+<a name="Exercise4"></a>
+### Exercise 4: Using the data in the warehouse to generate Power BI visualizations ###
 
 Power BI and SQL Data Warehouse allow you to quickly and easily create data visualizations, even at terabyte scale, or contains both relational and non-relational aspects.
 
-<a name="Ex5Task1"></a>
+<a name="Ex4Task1"></a>
 #### Task 1 - Open the Data Warehouse in PowerBI ####
 The easiest way to move between your _SQL Data Warehouse_ and _Power BI_ is with the **Open in Power BI** button. This button allows you to seamlessly begin creating new dashboards in Power BI.
 
@@ -1261,7 +1246,22 @@ In this task, you'll open Power BI and connect to the SQL Data Warehouse from th
 
 1. Once the connection is made, the partsunlimited dataset will appear on the left blade.
 
-<a name="Ex5Task2"></a>
+<a name="Ex4Task2"></a>
+#### Task 2 - Create Reports in Power BI ####
+
+1. Now that the data was processed by the stored procedure and populated the _ProductStats_ table, you can now pause the Data Warehouse. Navigate to the SQL Data Warehouse blade and click **Pause**.
+
+	![Pause SQL Data Warehouse](Images/ex3task4-pause-dw.png?raw=true "Pause SQL Data Warehouse")
+
+	_Pause SQL Data Warehouse_
+
+1. Confirm you want to pause the data warehouse.
+
+	Unique to SQL Data Warehouse is the ability to _pause_ and _resume_ compute on demand. If the team will not be using the Data Warehouse instance for a period of time, like nights, weekends, certain holidays or for any other reason, you can pause the Data Warehouse instance for that period of time and pick up where you left off when you return. 
+
+	> **Note:** Since storage is separate from compute, your storage is unaffected by pause and you can continue having access to it. For instance, using Power BI as you will do in next exercise.
+
+<a name="Ex4Task2"></a>
 #### Task 2 - Create Reports in Power BI ####
 A **Power BI report** is one or more pages of visualizations (charts and graphs). A **dashboard** is a single canvas that contains one or more tiles that you can use to connect to multiple datasets and display visualizations from many different reports.
 
@@ -1315,20 +1315,6 @@ In this task, you'll create a report based on the SQL Data Warehouse dataset you
 
 	_Save report_
 
-<a name="Ex5Task3"></a>
-#### Task 3 - Pause Azure SQL Data Warehouse####
-
-1. Now that the data was processed by the stored procedure and populated the _ProductStats_ table, you can now pause the Data Warehouse. Navigate to the SQL Data Warehouse blade and click **Pause**.
-
-	![Pause SQL Data Warehouse](Images/ex3task4-pause-dw.png?raw=true "Pause SQL Data Warehouse")
-
-	_Pause SQL Data Warehouse_
-
-1. Confirm you want to pause the data warehouse.
-
-	Unique to SQL Data Warehouse is the ability to _pause_ and _resume_ compute on demand. If the team will not be using the Data Warehouse instance for a period of time, like nights, weekends, certain holidays or for any other reason, you can pause the Data Warehouse instance for that period of time and pick up where you left off when you return. 
-
-	> **Note:** Since storage is separate from compute, your storage is unaffected by pause and you can continue having access to it. For instance, using Power BI as you will do in next exercise.
 ---
 
 <a name="Summary"></a>
