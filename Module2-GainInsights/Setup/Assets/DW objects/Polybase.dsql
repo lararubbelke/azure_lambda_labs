@@ -16,7 +16,7 @@ WITH
 ;
 
 
--- C: Create an external data source
+-- Create an external data source
 -- TYPE: HADOOP - PolyBase uses Hadoop APIs to access data in Azure blob storage.
 -- LOCATION: Provide Azure storage account name and blob container name.
 -- CREDENTIAL: Provide the credential created in the previous step.
@@ -24,12 +24,12 @@ WITH
 CREATE EXTERNAL DATA SOURCE AzureStorage
 WITH (
     TYPE = HADOOP,
-    LOCATION = 'wasbs://<container name>@<Azure storage account name>.blob.core.windows.net',
+    LOCATION = 'wasbs://samplelogs@<Azure storage account name>.blob.core.windows.net',
     CREDENTIAL = AzureStorageCredential
 );
 
 
--- D: Create an external file format
+-- Create an external file format
 -- FORMAT_TYPE: Type of file format in Azure storage (supported: DELIMITEDTEXT, RCFILE, ORC, PARQUET).
 -- FORMAT_OPTIONS: Specify field terminator, string delimiter, date format etc. for delimited text files.
 -- Specify DATA_COMPRESSION method if data is compressed.
@@ -41,7 +41,7 @@ WITH (
 );
 
 
--- E: Create the external table
+-- Create the external table
 -- Specify column names and data types. This needs to match the data in the sample file.
 -- LOCATION: Specify path to file or directory that contains the data (relative to the blob container).
 -- To point to all files under the blob container, use LOCATION='.'

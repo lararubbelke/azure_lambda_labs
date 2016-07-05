@@ -76,12 +76,15 @@ In order to run the exercises in this module, you'll need to create an HDI clust
 	> ````
 
 1. Go back to the Azure portal and check if the storage provisioning is complete. **Take note of the storage account name and key values from the settings pane**.
+2. > **Note:** You will use the storage key in several steps during this lab. It is recommended to copy this to a text file and save in a readily accessible location (ie Desktop).
 
 	![Getting account name and key](Images/setup-storage-key.png?raw=true "Getting account name and key")
 
 	_Getting account name and key_
 
-1. Open **Azure Storage Explorer** or the tool of your preference and connect to the new storage account using the account name and key from the previous step. In _Azure Storage Explorer_, right-click on **Storage Accounts**, select **Connect to Azure Storage...** and enter the account name and key in the dialog, then click **OK**.
+1. Use **Azure Storage Explorer** or the tool of your preference to connect to the new storage account using the account name and key from the previous step. 
+	1. On the left pane of _Azure Storage Explorer_, right-click on **Storage Accounts** and select **Connect to Azure Storage...** 
+	1. Enter the account name and key in the dialog, then click **OK**.
 
 	> **Note:** You can also add an Storage Account by login to your Azure accounts and pick storage accounts. To do this, click the settings button (the "wrench" symbol). 
 
@@ -97,16 +100,22 @@ In order to run the exercises in this module, you'll need to create an HDI clust
 	1. In _Azure Storage Explorer_ expand your account and right-click on **Blob Containers**, select **Create Blob Container** and enter "partsunlimited". Press enter to create the container. 
 	1. Right-click on the new container and select **Set Public Access Level..** and choose **Public read access for container and blobs**.
 	1. Repeat steps 1-2 to create another Blob Container with the name "**processeddata**".  This container will be used to store the result from the HDI processing.
+	1. Repeat steps 1-2 to create another Blob Container with the name "**samplelogs**".  This container will be used to store sample logs for the SQL Data Warehouse introduction lab.
 
 1. Copy the **logs** folder and subfolders (in _Setup\Assets_) into the **partsunlimited** container.
 	1. Right-click on the **partsunlimited** container and select **Open Blob Container Editor**.
-	1. Select the **partsunlimited** container in _Azure Storage Explorer_, click **Upload** and choose **Upload folder**. 
-	1. In the _Upload folder_ dialog, select the **logs** folder (from _Setup\Assets_) and then click **Upload**
-	1. Repeat to upload the **Scripts** folder.
+	1. Click **Upload** and choose **Upload folder**. 
+	1. In the _Upload folder_ dialog, select the **logs** folder (from _Setup\Assets_) and then click **Upload**.
+	1. Repeat the previous steps to upload the **Scripts** folder to the partsunlimited container.
+
+1. Copy the **adwsource** folder (in _Setup\Assets_) into the **samplelogs** container.
+	1. Right-click on the **samplelogs** container and select **Open Blob Container Editor**.
+	1. Click **Upload** and choose **Upload folder**. 
+	1. In the _Upload folder_ dialog, select the **adwsource** folder (from _Setup\Assets_) and then click **Upload**.
 
 > **Note:** Alternatively, you could use the [Blob Service REST API](https://msdn.microsoft.com/en-us/library/azure/dd135733.aspx) to automate the files upload.
 
-You should now have sample data and a new storage account with two blob containers. The partsunlimited blob container should contain the logs sample data and scripts folders. 
+You should now have sample data and a new storage account with three blob containers. The partsunlimited blob container should contain the logs data and scripts folders. 
 
 <a name="ManualSetupHDI"></a>
 #### Manual Setup 2: Creating the HDI cluster ####
@@ -133,17 +142,18 @@ You should now have sample data and a new storage account with two blob containe
 
 
 1. Click **Credentials**.  Configure the cluster login credentials (for instance: **admin/myP@ssw0rd**) and the SSH credentials if using Linux. Click **Select** to save changes to the credential settings.
-1. Click **Data Source** to configure the storage container. 
 
-2. Create a new storage account for the _data source_.
- 	1. Select the **Location** used for the storage account in Module 1. 
+1. Click **Data Source** to configure the storage container. 
  	1. Click **Select storage account** and select the storage account created in Module 1.
 	1. Type "**hdi**" for the default container name.
-	2. Click **Select** at the bottom of the Data source blade.
+ 	1. Verify the **Location** is set correctly.  
+	1. Click **Select** at the bottom of the Data source blade.
 
-1. Click **Pricing**.  Enter 1 for the worker nodes number and click **Select** at the bottom of the blade.
+1. Click **Pricing**.  
+	1. Enter 1 for the worker nodes number. 
+	1. Click **Select** at the bottom of the blade.
 
-1. Click **Use existing** to select the same Resource Group as the used for the Storage account.
+1. To configure the **Resource Group**.  Click **Use existing** and select the Resource Group used for lab.
 
 1. Click **Create**. The provisioning may take 20 minutes to complete.
 
@@ -151,7 +161,7 @@ You should now have sample data and a new storage account with two blob containe
 
 	_Create HDI cluster_
 
-> **Note:** For this module we don't need to persist the cluster when deleted, so we won't configure a Hive and Oozie metastore for it. 
+> **Note:** For this module we don't need to persist the cluster when deleted, so we won't configure a Hive and Oozie metastore. 
 
 > Using the metastore helps you to retain your Hive and Oozie metadata, so that you don't need to re-create Hive tables or Oozie jobs when you create a new cluster. By default, Hive uses an embedded Azure SQL database to store this information. The embedded database can't preserve the metadata when the cluster is deleted.
 
@@ -196,7 +206,7 @@ You should now have sample data and a new storage account with two blob containe
 
 1. Once created, open the _SQL Data Warehouse_ blade. To open the SQL Data Warehouse blade navigate Browse > SQL Databases and select the **partsunlimited** database. 
 
-2. Click on the server name to open the Sql Server settings and then click **Firewall**.
+1. Click on the server name to open the Sql Server settings and then click **Firewall**.
 
 1. Click on **Add client IP** to add a rule to enable access for your machine.
 
