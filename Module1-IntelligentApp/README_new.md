@@ -143,7 +143,7 @@ Settings for PartsUnlimitedDataGen
 ```
 
 1. Now run the PartsUnlimitedDataGen project.  Again, if everything is hooked up the application should;
-- Got DocumentDb and retrieve your key
+- Go to DocumentDb and retrieve your key
 - Connect to IoT hub and start sending messages
 
 

@@ -117,6 +117,7 @@
 
                 var eventMessage = new EventMessage
                 {
+                    EventDate = DateTime.Now.ToString("yyyyMMdd"),
                     Type = randomEventType,
                     ProductId = randomProduct.ProductId,
                     Title = randomProduct.Title,
@@ -140,7 +141,7 @@
                 await deviceClient.SendEventAsync(message);
 
                 //eventHubClient.Send(data);
-                Console.WriteLine("Sent message: {0}.", message);
+                Console.WriteLine("Sent message: {0} at time {1}.",eventMessage.ToString() , DateTime.Now.ToString("yyyyMMdd hh:mm:ss"));
             }
             catch (Exception exception)
             {
