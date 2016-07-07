@@ -244,7 +244,7 @@ Once the SQL Data Warehouse is created and the firewall rules are updated, valid
 
 1. Click execute button (**Ctrl+Shift+E**) to run the query.
 
-	![Validating connectivity](Images/setup-run-sql.png?raw=true "Validating connectivity")
+	![Validating connectivity](Images/setup-run-sql2.png?raw=true "Validating connectivity")
 
 	_Validating connectivity_
 
@@ -253,7 +253,7 @@ Once the SQL Data Warehouse is created and the firewall rules are updated, valid
 
 > **Note:** to clean your subscription just delete the resource group you created for all the associated resources.
 
-Now you start executing the exercises.
+Now you will start executing the exercises.
 
 ---
 
@@ -476,6 +476,8 @@ You have now connected to your Azure SQL Data Warehouse and are ready to begin b
 #### Task 2 - Configure Connectivity with Azure Blob Storage ####
 PolyBase uses T-SQL external objects to define the location and attributes of the external data. The external object definitions are stored in SQL Data Warehouse. The data itself is stored externally in Azure Blob Storage.
 
+All scripts for this exercise are available in the folder Module2-GainInsights\Setup\Assets\DW objects\Scripts\.
+
 1. Execute the following SQL statement in the new query window. Replace the _Azure storage key_ placeholder with your Azure storage account key. The script will create a Master Key if it doesn't already exist and create a new Database Scoped Credential. The Master Key is needed to encrypt the database scoped credentials that will connect to your storage account. 
 
 	````SQL
@@ -605,7 +607,7 @@ The easiest and most efficient way to load data from Azure blob storage is to us
 	````
 
 <a name="Ex2Task5"></a>
-#### Task 1 - Create a new summary table for reporting ####
+#### Task 5 - Create a new summary table for reporting ####
 
 Before we move to the next exercise, create a stored procedure to build a summary table that will be used for reporting and analysis.
 
