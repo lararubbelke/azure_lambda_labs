@@ -655,6 +655,8 @@ Before we move to the next exercise, create a stored procedure to build a summar
 
 	CREATE PROCEDURE adw.asp_populate_productlogsummary AS
 	BEGIN
+	IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'adw' AND TABLE_NAME = 'ProductLogSummary')
+	DROP TABLE adw.ProductLogSummary;
 	CREATE TABLE adw.ProductLogSummary 
 	WITH
 	(   
