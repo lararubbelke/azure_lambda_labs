@@ -488,18 +488,205 @@ FROM LogsRaw
 
 <a name="Exercise2"></a>
 ### Exercise 2: Loading and querying data in Azure SQL Data Warehouse ###
+The fastest way to import data into SQL Data Warehouse is to use **PolyBase** to load data from Azure blob storage. PolyBase uses SQL Data Warehouse's massively parallel processing (MPP) design to load data in parallel from Azure blob storage. To use PolyBase, you can use T-SQL commands or an Azure Data Factory pipeline.  This exercise will use a T-SQL command.  Later in the lab you will write an Azure Data Factory pipeline to load data with Polybase. 
 
-**Azure SQL Data Warehouse** ...
+In this exercise you'll create an **External Table** using Polybase. You will build a new SQL Data Warehouse table using the Create Table As Select (CTAS) syntax and issue a few sample queries. 
 
-**Polybase** ...
-
-In this exercise, you'll create an **External Table** using Polybase. You will issue a few sample queries, and then build a new table using the Create Table As Select (CTAS) syntax. 
+Once you have had some experience using Polybase and querying Azure SQL Data Warehouse, you create the tables and stored procedures that will be used with Azure Data Factory later in the lab.
 
 <a name="Ex2Task1"></a>
-#### Task 1 - Set up Polybase ####
+#### Task 1 - Connect to Azure SQL Data Warehouse using Visual Studio 2015 ####
+
+1. Return to the Azure Portal and navigate to the new SQL Data Warehouse you created.
+
+1. In the _SQL Data Warehouse_ blade, click **Open in Visual Studio**. In the new blade, click **Open in Visual Studio**.
+
+	![Open Data Warehouse in Visual Studio](Images/setup-open-vs.png?raw=true "Open Data Warehouse in Visual Studio")
+
+	_Open Data Warehouse in Visual Studio_
+
+1. Confirm you want to switch apps if prompted.
+
+1. In Visual Studio, enter the SQL Server credentials (dwadmin/P@ssword123).
+
+1. In the _SQL Server Object Explorer_, expand the server and right-click the **partsunlimited** database.   Select **New Query...**.
+
+You have now connected to your Azure SQL Data Warehouse and are ready to begin building and loading tables.  
 
 <a name="Ex2Task2"></a>
-#### Task 1 - Create a new table ####
+#### Task 2 - Configure Connectivity with Azure Blob Storage ####
+PolyBase uses T-SQL external objects to define the location and attributes of the external data. The external object definitions are stored in SQL Data Warehouse. The data itself is stored externally in Azure Blob Storage.
+
+1. Execute the following SQL statement in the new query window. Replace the _Azure storage key_ placeholder with your Azure storage account key. The script will create a Master Key if it doesn't already exist and create a new Database Scoped Credential. The Master Key is needed to encrypt the database scoped credentials that will connect to your storage account. 
+
+	````SQL
+	IF NOT EXISTS (SELECT * FROM sys.symmetric_keys where name = '##MS_DatabaseMasterKey##')
+	CREATE MASTER KEY;
+
+	CREATE DATABASE SCOPED CREDENTIAL AzureStorageCredential
+	WITH
+    IDENTITY = 'user',
+    SECRET = '<Azure storage key>';
+	````
+
+1. Execute the following SQL statement in the new query window to create an external data source. Replace the _Azure storage account name_ placeholder with your Azure storage account name.  Note that Polybase uses Hadoop APIs to access data in Azure blob storage.  
+
+	````SQL
+	CREATE EXTERNAL DATA SOURCE AzureStorage
+	WITH (
+	    TYPE = HADOOP,
+	    LOCATION = 'wasbs://samplelogs@<Azure storage account name>.blob.core.windows.net',
+	    CREDENTIAL = AzureStorageCredential
+	);
+	````
+
+1. Once you have set up connectivity, open a new query window and execute the following SQL statement to define the data format.  
+
+	````SQL
+	CREATE EXTERNAL FILE FORMAT TextFile
+	WITH (
+	    FORMAT_TYPE = DelimitedText,
+	    FORMAT_OPTIONS (FIELD_TERMINATOR = '|')
+	);
+	````
+
+<a name="Ex2Task3"></a>
+#### Task 3 - Set up the external table ####
+An external table contains column names and types, just like any other database table. It simply doesn't contain the data.
+
+Now let's create the external tables. All we are doing here is defining column names and data types, and binding them to the location and format of the Azure blob storage files. The location is the folder under the root directory of the Azure Storage Blob.
+
+1. We will create a separate schema for our external tables.
+
+	````SQL
+	CREATE SCHEMA [asb]
+	GO
+	````
+
+1. Open a query window and execute the following SQL to create the external table.  Notice the WITH clause is using the data source and file format created in the previous task.
+
+	````SQL
+	CREATE EXTERNAL TABLE asb.ProductLogExternal
+	(
+		LogDate int,
+		ProductID int, 
+		Title nvarchar(50), 
+		Category nvarchar(50), 
+		ProdType nvarchar(10), 
+		TotalClicked int
+	)
+	WITH (
+	    LOCATION='/07/',
+	    DATA_SOURCE=AzureStorage,
+	    FILE_FORMAT=TextFile
+	);
+	````
+1. After the external table has been created, run a couple of queries on the table.  Notice how you query the external table as you would any other table in the database.
+
+	````SQL
+	SELECT COUNT(*) FROM asb.ProductLogExternal;
+
+	SELECT
+		LogDate,
+		Category,
+		Title,
+		SUM(CASE WHEN prodtype = 'view' THEN totalClicked ELSE 0 END) AS ProdViews,
+		SUM(CASE WHEN prodtype = 'add' THEN totalClicked ELSE 0 END) AS ProdAdds
+	FROM asb.ProductLogExternal 
+	GROUP BY LogDate, Title, Category;
+
+	````
+
+<a name="Ex2Task4"></a>
+#### Task 4 - Loading Data with CTAS ####
+You can query data using the external tables, but often you will want to load the data in Azure Data Warehouse where you can optimize the table for query and analysis.  
+
+The easiest and most efficient way to load data from Azure blob storage is to use [CREATE TABLE AS SELECT]. Loading with CTAS leverages the strongly typed external tables you have just created.
+
+1. Open a new query window and execute the following to create a new schema for our internally managed tables. 
+
+	````SQL
+	CREATE SCHEMA [adw]
+	GO
+
+	````
+
+1. Execute the following in a query window to create a new partitioned table.  Note this table will be created based on a SELECT statement issued on the external table. 
+
+	````SQL	
+	CREATE TABLE adw.FactProductLog
+	WITH (
+		CLUSTERED COLUMNSTORE INDEX,
+		DISTRIBUTION = HASH(ProductID),
+	    PARTITION   (   LogDate RANGE RIGHT FOR VALUES
+	                   ( 20160704, 20160705, 20160706)
+	                    )
+		)
+	AS 
+	SELECT
+		LogDate,
+		ProductID,
+		Title, 
+		Category,
+		ProdType,
+		TotalClicked
+	FROM asb.ProductLogExternal
+	GO
+	````
+
+1. Azure SQL Data Warehouse does not automatically manage your statistics.  It is a good practice to create single column statistics on your internally managed tables immediately after a load. There are some choices for statistics. For example, if you create single-column statistics on every column it might take a long time to rebuild statistics. If you know certain columns are not going to be in query predicates, you could skip creating statistics on those columns.
+
+	````SQL	
+	CREATE STATISTICS Stat_adw_FactProductLog_LogDate on adw.FactProductLog(LogDate);
+	CREATE STATISTICS Stat_adw_FactProductLog_ProductID on adw.FactProductLog(ProductID);
+	CREATE STATISTICS Stat_adw_FactProductLog_category on adw.FactProductLog(category);
+	CREATE STATISTICS Stat_adw_FactProductLog_title on adw.FactProductLog(title);
+	CREATE STATISTICS Stat_adw_FactProductLog_prodtype on adw.FactProductLog(prodtype);
+	CREATE STATISTICS Stat_adw_FactProductLog_totalclicked on adw.FactProductLog(totalclicked);
+	````
+
+<a name="Ex2Task5"></a>
+#### Task 1 - Create a new summary table for reporting ####
+
+Before we move to the next exercise, create a stored procedure to build a summary table that will be used for reporting and analysis.
+
+1. Execute the following statement to create the summary table and table statistics.
+	````SQL	
+
+	CREATE PROCEDURE adw.asp_populate_productlogsummary AS
+	BEGIN
+	CREATE TABLE adw.ProductLogSummary 
+	WITH
+	(   
+	    CLUSTERED COLUMNSTORE INDEX,
+	    DISTRIBUTION = ROUND_ROBIN
+	)
+	AS
+	SELECT
+		LogDate,
+		Category,
+		Title,
+		SUM(CASE WHEN prodtype = 'view' THEN totalClicked ELSE 0 END) AS ProdViews,
+		SUM(CASE WHEN prodtype = 'add' THEN totalClicked ELSE 0 END) AS ProdAdds
+	FROM adw.FactProductLog 
+	GROUP BY LogDate, Title, Category
+	
+	CREATE STATISTICS Stat_adw_ProductLogSummary_LogDate on adw.ProductLogSummary(LogDate);
+	CREATE STATISTICS Stat_adw_ProductLogSummary_category on adw.ProductLogSummary(category);
+	CREATE STATISTICS Stat_adw_ProductLogSummary_title on adw.ProductLogSummary(title);
+	CREATE STATISTICS Stat_adw_ProductLogSummary_prodviews on adw.ProductLogSummary(prodviews);
+	CREATE STATISTICS Stat_adw_ProductLogSummary_prodadds on adw.ProductLogSummary(prodadds);
+	END
+	GO
+	````
+
+1. Click execute button (**Ctrl+Shift+E**) to run the query.
+
+	![Creating schema for Data Warehouse](Images/setup-run-sql.png?raw=true "Creating schema for Data Warehouse")
+
+	_Creating schema for Data Warehouse_
+
+
 
 <a name="Exercise3"></a>
 ### Exercise 3: Creating Azure Data Factory ###
