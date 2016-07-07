@@ -217,9 +217,9 @@ You should now have sample data and a new storage account with three blob contai
 1. Click **Save**.
 
 <a name="ManualSetupSqlDWScript"></a>
-#### Manual Setup 4: Manually create the tables and stored procedures in SQL Data Warehouse ####
+#### Manual Setup 4: Verify connectivity to SQL Data Warehouse ####
 
-Once the SQL Data Warehouse is created, you need to create the tables and stored procedures that will be used in this module.
+Once the SQL Data Warehouse is created and the firewall rules are updated, validate connectivity with Visual Studio.
 
 1. Navigate to the new SQL Data Warehouse you created.
 
@@ -235,62 +235,21 @@ Once the SQL Data Warehouse is created, you need to create the tables and stored
 
 1. In the _SQL Server Object Explorer_, expand the server and right-click the **partsunlimited** database.   Select **New Query...**.
 
-1. In the new query window add the following script to create the tables and stored procedure used in this module.  This script is also available in the folder ...\Setup\Assets\DW objects.
+1. In the new query window add the following script to verify setup completed correctly.
 
 	````SQL
-	CREATE TABLE dbo.ProductLogs
-	 (productid int, title nvarchar(50), category nvarchar(50), type nvarchar(5), totalClicked int)
-	GO
-	
-	CREATE TABLE dbo.ProductStats
-	 (category nvarchar(50), title nvarchar(50), views int, adds int)
-	GO
-	
-	CREATE PROCEDURE sp_populate_stats AS
-	BEGIN
-	 DELETE FROM dbo.ProductStats;
-	 INSERT INTO dbo.ProductStats 
-	 SELECT
-	  category,
-	  title,
-	  SUM(CASE WHEN type = 'view' THEN totalClicked ELSE 0 END) AS views,
-	  SUM(CASE WHEN type = 'add' THEN totalClicked ELSE 0 END) AS adds
-	 FROM dbo.ProductLogs GROUP BY title, category
-	END
+	SELECT @@version
 	GO
 	````
 
 1. Click execute button (**Ctrl+Shift+E**) to run the query.
 
-	![Creating schema for Data Warehouse](Images/setup-run-sql.png?raw=true "Creating schema for Data Warehouse")
+	![Validating connectivity](Images/setup-run-sql.png?raw=true "Validating connectivity")
 
-	_Creating schema for Data Warehouse_
+	_Validating connectivity_
 
-1. Close Visual Studio. You don't need to save changes.
+1. Leave Visual Studio open.  You will execute more statements later in the lab. 
 
-<a name="SetupScript"></a>
-#### Automated setup using scripts ####
-
-Using the setup script you can fully setup the environment by creating the sample data, upload to storage, create HDI cluster and SQL Data Warehouse. You can skip all the tasks that you have performed manually.
-
-1. Open Windows Explorer and browse to the module's **Setup** folder.
-1. Right-click **Setup.cmd** and select **Run as Administrator** to launch the setup process.
-1. If the _User Account Control_ dialog box is shown, confirm the action to proceed.
-1. Select a setup operation from the menu. First generate the sample data files and then proceed with the next tasks in order.
-
-	![Setup menu](Images/setup-menu.png?raw=true "Setup menu")
-
-	_Setup menu_
-
-1. If prompted, log in with credentials where you have an available Azure subscription. You will be able to select one if you have multiple subscriptions.
-
-1. Complete the prompted values as requested on each setup step. **Take note of the account names, keys and passwords as they will be required for the exercises**. Also, the settings will be stored in .txt files inside the "Setup" folder.
-
-	The HDI cluster provisioning may take around 15 minutes. You can enter the [Microsoft Azure portal](https://portal.azure.com/) to check the status of the HDI cluster provisioning.
-
-	![HDI cluster in progress](Images/setup-inprogress-hdi.png?raw=true "HDI cluster in progress")
-
-	_HDI cluster in progress_
 
 > **Note:** to clean your subscription just delete the resource group you created for all the associated resources.
 
