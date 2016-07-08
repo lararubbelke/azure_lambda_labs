@@ -1,0 +1,157 @@
+﻿ --Create a master key if one does not already exist.
+ --Required to encrypt the credential secret in the next step.
+IF NOT EXISTS (SELECT * FROM sys.symmetric_keys where name = '##MS_DatabaseMasterKey##')
+CREATE MASTER KEY;
+
+-- Create a database scoped credential
+-- IDENTITY: Provide any string, it is not used for authentication to Azure storage.
+-- SECRET: Provide your Azure storage account key.
+
+CREATE DATABASE SCOPED CREDENTIAL AzureStorageCredential
+WITH
+    IDENTITY = 'user',
+    SECRET = '<Azure storage key>'
+;
+
+
+-- Create an external data source
+-- TYPE: HADOOP - PolyBase uses Hadoop APIs to access data in Azure blob storage.
+-- LOCATION: Provide Azure storage account name and blob container name.
+-- CREDENTIAL: Provide the credential created in the previous step.
+
+CREATE EXTERNAL DATA SOURCE AzureStorage
+WITH (
+    TYPE = HADOOP,
+    LOCATION = 'wasbs://samplelogs@<Azure storage account name>.blob.core.windows.net',
+    CREDENTIAL = AzureStorageCredential
+);
+
+
+-- Create an external file format
+-- FORMAT_TYPE: Type of file format in Azure storage (supported: DELIMITEDTEXT, RCFILE, ORC, PARQUET).
+-- FORMAT_OPTIONS: Specify field terminator, string delimiter, date format etc. for delimited text files.
+-- Specify DATA_COMPRESSION method if data is compressed.
+
+CREATE EXTERNAL FILE FORMAT TextFile
+WITH (
+    FORMAT_TYPE = DelimitedText,
+    FORMAT_OPTIONS (FIELD_TERMINATOR = '|')
+);
+
+
+-- Create the external table
+-- Specify column names and data types. This needs to match the data in the sample file.
+-- LOCATION: Specify path to file or directory that contains the data (relative to the blob container).
+-- To point to all files under the blob container, use LOCATION='.'
+CREATE SCHEMA [asb]
+GO
+
+CREATE EXTERNAL TABLE asb.ProductLogExternal
+(
+	LogDate int,
+	ProductID int, 
+	Title nvarchar(50), 
+	Category nvarchar(50), 
+	ProdType nvarchar(10), 
+	TotalClicked int
+)
+WITH (
+    LOCATION='/07/',
+    DATA_SOURCE=AzureStorage,
+    FILE_FORMAT=TextFile
+);
+
+
+-- Run a query on the external table
+
+SELECT COUNT(*) FROM asb.ProductLogExternal;
+SELECT
+	LogDate,
+	Category,
+	Title,
+	SUM(CASE WHEN prodtype = 'view' THEN totalClicked ELSE 0 END) AS ProdViews,
+	SUM(CASE WHEN prodtype = 'add' THEN totalClicked ELSE 0 END) AS ProdAdds
+FROM asb.ProductLogExternal 
+GROUP BY LogDate, Title, Category
+
+
+-- Load data into a table using CTAS
+-- Create a partitioned table
+CREATE SCHEMA [adw]
+GO
+
+CREATE TABLE adw.FactProductLog
+WITH (
+	CLUSTERED COLUMNSTORE INDEX,
+	DISTRIBUTION = HASH(ProductID),
+    PARTITION   (   LogDate RANGE RIGHT FOR VALUES
+                   ( 20160704, 20160705, 20160706)
+                    )
+	)
+AS 
+SELECT
+	LogDate,
+	ProductID,
+	Title, 
+	Category,
+	ProdType,
+	TotalClicked
+FROM asb.ProductLogExternal
+GO
+
+CREATE STATISTICS Stat_adw_FactProductLog_LogDate on adw.FactProductLog(LogDate);
+CREATE STATISTICS Stat_adw_FactProductLog_ProductID on adw.FactProductLog(ProductID);
+CREATE STATISTICS Stat_adw_FactProductLog_category on adw.FactProductLog(category);
+CREATE STATISTICS Stat_adw_FactProductLog_title on adw.FactProductLog(title);
+CREATE STATISTICS Stat_adw_FactProductLog_prodtype on adw.FactProductLog(prodtype);
+CREATE STATISTICS Stat_adw_FactProductLog_totalclicked on adw.FactProductLog(totalclicked);
+
+
+-- View the distribution of rows across the partitions
+
+SELECT  QUOTENAME(s.[name])+'.'+QUOTENAME(t.[name]) as Table_name
+,       i.[name] as Index_name
+,       p.partition_number as Partition_nmbr
+,       p.[rows] as Row_count
+,       p.[data_compression_desc] as Data_Compression_desc
+FROM    sys.partitions p
+JOIN    sys.tables     t    ON    p.[object_id]   = t.[object_id]
+JOIN    sys.schemas    s    ON    t.[schema_id]   = s.[schema_id]
+JOIN    sys.indexes    i    ON    p.[object_id]   = i.[object_Id]
+                            AND   p.[index_Id]    = i.[index_Id]
+WHERE t.[name] = 'FactProductLog' AND s.[name]='ADW'
+
+
+-- Create a stored procedure to generate a new summary table using the same SELECT statement executed on the external table in the previous steps
+
+	CREATE PROCEDURE adw.asp_populate_productlogsummary AS
+	BEGIN
+	IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'adw' AND TABLE_NAME = 'ProductLogSummary')
+	DROP TABLE adw.ProductLogSummary;
+	CREATE TABLE adw.ProductLogSummary 
+	WITH
+	(   
+	    CLUSTERED COLUMNSTORE INDEX,
+	    DISTRIBUTION = ROUND_ROBIN
+	)
+	AS
+	SELECT
+		LogDate,
+		Category,
+		Title,
+		SUM(CASE WHEN prodtype = 'view' THEN totalClicked ELSE 0 END) AS ProdViews,
+		SUM(CASE WHEN prodtype = 'add' THEN totalClicked ELSE 0 END) AS ProdAdds
+	FROM adw.FactProductLog 
+	GROUP BY LogDate, Title, Category
+	
+	CREATE STATISTICS Stat_adw_ProductLogSummary_LogDate on adw.ProductLogSummary(LogDate);
+	CREATE STATISTICS Stat_adw_ProductLogSummary_category on adw.ProductLogSummary(category);
+	CREATE STATISTICS Stat_adw_ProductLogSummary_title on adw.ProductLogSummary(title);
+	CREATE STATISTICS Stat_adw_ProductLogSummary_prodviews on adw.ProductLogSummary(prodviews);
+	CREATE STATISTICS Stat_adw_ProductLogSummary_prodadds on adw.ProductLogSummary(prodadds);
+	END
+	GO
+
+exec adw.asp_populate_productlogsummary; 
+
+SELECT * FROM adw.ProductLogSummary;

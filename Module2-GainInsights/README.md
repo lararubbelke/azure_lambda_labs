@@ -44,43 +44,31 @@ In order to run the exercises in this module, you'll need to create an HDI clust
 <a name="ManualSetupUploadFiles"></a>
 #### Manual Setup 1: Manually uploading the sample files ####
 
+In this section you will create a new storage account, and load sample data that will be used later in the module. 
+
 1. In the [Microsoft Azure portal](https://portal.azure.com/), create a new Storage Account.
  1. Navigate New > Data + Storage > Storage Account. 
- 2. Provide a globally unique name for the new storage account. 
- 3. Select "_Resource Manager_" for the deployment model.
+ 1. Provide a globally unique name for the new storage account. 
+ 1. Select "_Resource Manager_" for the deployment model.
  1. Select the "_Standard Locally Redundant_" (Standard-LRS) storage account type.  
 	 	>**Note:** Under normal circumstances, you may choose to replicate across regions to support recovery scenarios.  This lab will not require geo-redundency. 
 
- 5. Create a new _Resource Group_ with a globally unique name.  You will use this same resource group when creating the HDI cluster, SQL Data Warehouse and Data Factory.
+ 1. Create a new _Resource Group_ with a globally unique name.  You will use this same resource group when creating the HDI cluster, SQL Data Warehouse and Data Factory.
  1. Select a location.  You will use this same location for the other services.
- 1. Click **Create**.
+ 1. Select Pin to Dashboard so you can easily access the storage account in future exercises. 
+ 1. Click **Create**.  The deployment will complete in about 1-3 minutes. 
 
 	![New storage account](Images/setup-new-storage.png?raw=true "New storage account")
 
 	_New storage account_
 
-1. Open Windows Explorer and browse to the module's **Setup** folder.
-
-1. Right-click **GenerateData.cmd** and select **Run as Administrator** to generate the sample data files and exit the script. The files will be generated in **Setup\Assets\logs** using date partitioned folders.
-
-	> **Note:** Azure Data Factory supports partitioned data. You can specify a dynamic folder path and file name for time series data with the "partitionedBy" section when defining the pipeline activities, also using Data Factory macros and the system variables: SliceStart and SliceEnd, which indicate start and end times for a given data slice. For example:
-	> 
-	> ````JavaScript
-		"folderPath": "partsunlimited/logs/{Year}/{Month}/{Day}",
-		"partitionedBy": 
-		 [
-			 { "name": "Year", "value": { "type": "DateTime", "date": "SliceStart", "format": "yyyy" } },
-			 { "name": "Month", "value": { "type": "DateTime", "date": "SliceStart", "format": "MM" } }, 
-			 { "name": "Day", "value": { "type": "DateTime", "date": "SliceStart", "format": "dd" } }
-		],
-	> ````
-
-1. Go back to the Azure portal and check if the storage provisioning is complete. **Take note of the storage account name and key values from the settings pane**.
-2. > **Note:** You will use the storage key in several steps during this lab. It is recommended to copy this to a text file and save in a readily accessible location (ie Desktop).
+1. When the storage account has been provisioned, select Access Keys from the Settings blade to copy the storage account key.  
+	> **Note:** You will use the storage key in several steps during this lab. **Copy this to a text file and save in a readily accessible location (ie Desktop).**
 
 	![Getting account name and key](Images/setup-storage-key.png?raw=true "Getting account name and key")
 
 	_Getting account name and key_
+
 
 1. Use **Azure Storage Explorer** or the tool of your preference to connect to the new storage account using the account name and key from the previous step. 
 	1. On the left pane of _Azure Storage Explorer_, right-click on **Storage Accounts** and select **Connect to Azure Storage...** 
@@ -96,26 +84,31 @@ In order to run the exercises in this module, you'll need to create an HDI clust
 
 	> _Add an Account_
 
-1. Create a new Blob Container with the name "**partsunlimited**" and "Container" access level. 
-	1. In _Azure Storage Explorer_ expand your account and right-click on **Blob Containers**, select **Create Blob Container** and enter "partsunlimited". Press enter to create the container. 
+1. Create three new Blob Containers with "Container" access level. 
+	1. In _Azure Storage Explorer_ expand your account and right-click on **Blob Containers**, select **Create Blob Container** and enter **partsunlimited**. Press enter to create the container. 
 	1. Right-click on the new container and select **Set Public Access Level..** and choose **Public read access for container and blobs**.
-	1. Repeat steps 1-2 to create another Blob Container with the name "**processeddata**".  This container will be used to store the result from the HDI processing.
-	1. Repeat steps 1-2 to create another Blob Container with the name "**samplelogs**".  This container will be used to store sample logs for the SQL Data Warehouse introduction lab.
+	1. Repeat steps 1-2 to create another Blob Container with the name "**processeddata**".  This container will be used to store the result from the HDI processing and ADF workflow.
+	1. Repeat steps 1-2 to create another Blob Container with the name "**dwdata**".  This container will be used to store sample logs for the SQL Data Warehouse introduction lab.
 
-1. Copy the **logs** folder and subfolders (in _Setup\Assets_) into the **partsunlimited** container.
+1. Upload the **logs** folder and subfolders (in _Setup\Assets\HDInsight_) to the **partsunlimited** container.
 	1. Right-click on the **partsunlimited** container and select **Open Blob Container Editor**.
 	1. Click **Upload** and choose **Upload folder**. 
-	1. In the _Upload folder_ dialog, select the **logs** folder (from _Setup\Assets_) and then click **Upload**.
-	1. Repeat the previous steps to upload the **Scripts** folder to the partsunlimited container.
+	1. In the _Upload folder_ dialog, select the **logs** folder from _Setup\Assets\HDInsight_ and then click **Upload**.
+	1. Repeat the previous steps to upload the **Scripts** folder (from _Setup\Assets\HDInsight_) to the partsunlimited container.
 
-1. Copy the **adwsource** folder (in _Setup\Assets_) into the **samplelogs** container.
-	1. Right-click on the **samplelogs** container and select **Open Blob Container Editor**.
+1. Upload the **processedlogs** folder (in _Setup\Assets\ADW_) to the **dwdata** container.
+	1. Right-click on the **dwdata** container and select **Open Blob Container Editor**.
 	1. Click **Upload** and choose **Upload folder**. 
-	1. In the _Upload folder_ dialog, select the **adwsource** folder (from _Setup\Assets_) and then click **Upload**.
+	1. In the _Upload folder_ dialog, select the **processedlogs** folder (from _Setup\Assets\ADW_) and then click **Upload**.
 
 > **Note:** Alternatively, you could use the [Blob Service REST API](https://msdn.microsoft.com/en-us/library/azure/dd135733.aspx) to automate the files upload.
 
-You should now have sample data and a new storage account with three blob containers. The partsunlimited blob container should contain the logs data and scripts folders. 
+You should now have sample data and a new storage account with three blob containers. 
+
+- The partsunlimited blob container should contain the raw logs data and scripts folders. 
+- The processeddata container should be empty, as it will be populated during the Azure Data Factory lab.  
+- The dwdata container should have the processedlogs sample data, which will be used during the Azure Data Warehouse lab. 
+
 
 <a name="ManualSetupHDI"></a>
 #### Manual Setup 2: Creating the HDI cluster ####
@@ -138,13 +131,19 @@ You should now have sample data and a new storage account with three blob contai
 
 	1. Select **the latest version** ("Hadoop 2.7.1 (HDI 3.4)" or latest) from the Version drop-down.
 
+	1. Select a **Standard Cluster Tier**.
+
 	1. Click **Select** at the bottom of the Cluster Type configuration blade.
 
 
-1. Click **Credentials**.  Configure the cluster login credentials (for instance: **admin/myP@ssw0rd**) and the SSH credentials if using Linux. Click **Select** to save changes to the credential settings.
+1. Click **Credentials** to configure the cluster login credentials
+	1.  Enter an admin password in the **Cluster Login Password** box.  
+	1.  Enter an SSH username.
+	1.  Enter an SSH password. 
+	1.  Click **Select** to save changes to the credential settings.
 
 1. Click **Data Source** to configure the storage container. 
- 	1. Click **Select storage account** and select the storage account created in Module 1.
+ 	1. Click **Select storage account** and select the storage account created in the previous section.
 	1. Type "**hdi**" for the default container name.
  	1. Verify the **Location** is set correctly.  
 	1. Click **Select** at the bottom of the Data source blade.
@@ -153,7 +152,9 @@ You should now have sample data and a new storage account with three blob contai
 	1. Enter 1 for the worker nodes number. 
 	1. Click **Select** at the bottom of the blade.
 
-1. To configure the **Resource Group**.  Click **Use existing** and select the Resource Group used for lab.
+1. To configure the **Resource Group**.  Click **Use existing** and type or select the Resource Group you created with the storage account in the previous section.
+
+1. Click **Pin to dashboard** so the cluster is easy to access during the labs. 
 
 1. Click **Create**. The provisioning may take 20 minutes to complete.
 
@@ -178,13 +179,15 @@ You should now have sample data and a new storage account with three blob contai
 > _External Metastores configuration_
 
 <a name="ManualSetupSqlDW"></a>
-#### Manual Setup 3: Manually creating the Azure SQL Data Warehouse ####
+#### Manual Setup 3: Manually create the Azure SQL Data Warehouse ####
 
 1. In the [Microsoft Azure portal](https://portal.azure.com/), create a new Azure SQL Data Warehouse (_New > Data + Storage > SQL Data Warehouse_).
 
 1. Enter "**partsunlimited**" for the database name.
 
-1. Using the slider, choose the minimum performance of 100 DWU. This will be enough compute for this module.
+1. Select **Use existing** resource group and type or select the resource group created in the earlier section.
+
+1. Use **Blank database** for the source so a new empty database is used (it will use the "partsunlimited" name).
 
 1. Click **Server** to create a new SQL Server for hosting the Data Warehouse.
 	1. Select **Create a new server** in the Server blade.
@@ -194,11 +197,11 @@ You should now have sample data and a new storage account with three blob contai
 	1. Repeat the password to confirm it.
 	1. Select the same location used for the other services.
 
-1. Use **Blank database** for the source so a new empty database is used (it will use the "partsunlimited" name).
+1. Using the slider, choose the minimum performance of 100 DWU. This will be enough compute for this module.
 
-1. Select the resource group used for all the services.
+1. Click **Pin to dashboard** so the data warehouse is easily accessible for the rest of the labs. 
 
-	![Create SQL Data Warehouse](Images/setup-create-dw.png?raw=true "SQL Data Warehouse")
+	![Create SQL Data Warehouse](Images/setup-create-dw2.png?raw=true "SQL Data Warehouse")
 
 	_SQL Data Warehouse_
 
@@ -210,11 +213,11 @@ You should now have sample data and a new storage account with three blob contai
 
 1. Click on **Add client IP** to add a rule to enable access for your machine.
 
-	![Firewall config](Images/setup-dw-firewall.png?raw=true "Firewall config")
+	![Firewall config](Images/setup-dw-firewall2.png?raw=true "Firewall config")
 
 	_Firewall config_
 
-1. Click **Save**.
+1. Click **Save** at the top of the Firewall settings blade.
 
 <a name="ManualSetupSqlDWScript"></a>
 #### Manual Setup 4: Verify connectivity to SQL Data Warehouse ####
@@ -231,9 +234,9 @@ Once the SQL Data Warehouse is created and the firewall rules are updated, valid
 
 1. Confirm you want to switch apps if prompted.
 
-1. In Visual Studio, enter the SQL Server credentials (dwadmin/P@ssword123).
+1. In Visual Studio, enter the SQL Server credentials (dwadmin/P@ssword123) and click Connect. 
 
-1. In the _SQL Server Object Explorer_, expand the server and right-click the **partsunlimited** database.   Select **New Query...**.
+1. In the left panel _SQL Server Object Explorer_, expand the server and right-click the **partsunlimited** database.   Select **New Query...**.
 
 1. In the new query window add the following script to verify setup completed correctly.
 
@@ -242,7 +245,7 @@ Once the SQL Data Warehouse is created and the firewall rules are updated, valid
 	GO
 	````
 
-1. Click execute button (**Ctrl+Shift+E**) to run the query.
+1. Click the execute button (**Ctrl+Shift+E**) to run the query.
 
 	![Validating connectivity](Images/setup-run-sql2.png?raw=true "Validating connectivity")
 
@@ -374,13 +377,14 @@ In this task, you'll write a Hive query to generate product stats (views and car
 	````SQL
 	DROP TABLE IF EXISTS OutputTable;
 	CREATE EXTERNAL TABLE OutputTable (
+		logdate int,
 		productid int,
 		title string,
 		category string,
 		type string,
 		totalClicked int
 	) PARTITIONED BY (year int, month int, day int) 
-	ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
+	ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' LINES TERMINATED BY '\n'
 	STORED AS TEXTFILE LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/logs';
 	````
 
@@ -391,21 +395,21 @@ In this task, you'll write a Hive query to generate product stats (views and car
 
 In this task, you'll reuse the Hive query to generate the HQL script for the Hive activity that will generate the output stats in a new storage blob.
 
-1. Open the file located in **Setup\Assets\Scripts\logstocsv.hql** and review its content:
+1. Open the file located in **Setup\Assets\HDInsight\Scripts\logstocsv.hql** and review its content:
 
 	````SQL
 	INSERT OVERWRITE TABLE OutputTable Partition (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day})
-SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT) as productid,
+	SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT) as productid,
          get_json_object(jsonentry, "$.title") as title,
          get_json_object(jsonentry, "$.category") as category,
          get_json_object(jsonentry, "$.type") as type,
          CAST(get_json_object(jsonentry, "$.totalClicked") as BIGINT) as totalClicked
-FROM LogsRaw
+	FROM LogsRaw
 	````
 
     Notice this script is, essentially, the Hive query you wrote and tested in the previous task but it insert the results in the output table.
 
-1. Open the file located in **Setup\Assets\Scripts\addpartitions.hql** and review its content:
+1. Open the file located in **Setup\Assets\HDInsight\Scripts\addpartitions.hql** and review its content:
 
 	````SQL
 	ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day}) LOCATION 'wasb://partsunlimited@${hiveconf:StorageAccountName}.blob.core.windows.net/logs/${hiveconf:Year}/${hiveconf:Month}/${hiveconf:Day}';
@@ -476,7 +480,7 @@ You have now connected to your Azure SQL Data Warehouse and are ready to begin b
 #### Task 2 - Configure Connectivity with Azure Blob Storage ####
 PolyBase uses T-SQL external objects to define the location and attributes of the external data. The external object definitions are stored in SQL Data Warehouse. The data itself is stored externally in Azure Blob Storage.
 
-All scripts for this exercise are available in the folder Module2-GainInsights\Setup\Assets\DW objects\Scripts\.
+All scripts for this exercise are available in the folder Module2-GainInsights\Setup\Assets\ADW\Scripts\.
 
 1. Execute the following SQL statement in the new query window. Replace the _Azure storage key_ placeholder with your Azure storage account key. The script will create a Master Key if it doesn't already exist and create a new Database Scoped Credential. The Master Key is needed to encrypt the database scoped credentials that will connect to your storage account. 
 
@@ -496,7 +500,7 @@ All scripts for this exercise are available in the folder Module2-GainInsights\S
 	CREATE EXTERNAL DATA SOURCE AzureStorage
 	WITH (
 	    TYPE = HADOOP,
-	    LOCATION = 'wasbs://samplelogs@<Azure storage account name>.blob.core.windows.net',
+	    LOCATION = 'wasbs://dwdata@<Azure storage account name>.blob.core.windows.net',
 	    CREDENTIAL = AzureStorageCredential
 	);
 	````
