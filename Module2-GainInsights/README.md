@@ -423,29 +423,7 @@ In this task, you'll review and set up the scripts that will be used in the Azur
 
     This script adds the partitiones by date to the input and output tables. The storage account name and all the required date components for the partitiones will be passed as parameters by the Hive action running in the Data Factory.
 
-1. These scripts were already uploaded to your storage during the module setup by using the manual steps or the **Setup.cmd** script. Verify the HQL script was uploaded by using the an storage explorer tool such as **Azure Storage Explorer** to navigate to the **Scripts** folder in the **partsunlimited** container.
-
-	1. Open **Azure Storage Explorer**, right click on "Storage Account" tree item and select **Attach External Storage...**
-
-		![Attaching to external storage](Images/ex2task2-explorer-add-account.png?raw=true "Attaching to external storage")
-
-		_Attaching to external storage_
-
-		> **Note:** You can also add an Storage Account by login to your Azure accounts and pick storage accounts. To do this, click the settings button (the "wrench" symbol). 
-
-		> ![Settings](Images/azure-storage-explorer-settings.png?raw=true "Settings")
-
-		> _Settings_
-
-		> ![Add an Account](Images/azure-storage-explorer-add-account.png?raw=true "Add an Account")
-
-		> _Add an Account_
-
-	1. Enter the account name and key of the storage account you created/reused in the setup steps (leave the default endpoint options). Then click **OK** to add the account to Azure Explorer.
-
-		![Enter storage account name and key](Images/ex2task2-explorer-connect-account-key.png?raw=true "Enter storage account name and key")
-
-		_Enter storage account name and key_
+1. These scripts were already uploaded to your storage during the module setup by using the manual steps or the **Setup.cmd** script. Verify the HQL script was uploaded by using the **Azure Storage Explorer** to navigate to the **Scripts** folder in the **partsunlimited** container.
 
 	1. In the left pane navigate to the **partsunlimited** container, open the **Scripts** folder and verify the **logstocsv.hql** file is present.
 

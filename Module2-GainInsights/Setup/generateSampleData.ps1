@@ -25,6 +25,7 @@ $prods = @(
 )
 
 for($d = 0; $d -lt $daysCount; $d++) {
+	$newdate = $(Get-Date (Get-Date).AddDays(-$d) -format yyyy-MM-dd)
 	$folder = "Assets\logs\$(Get-Date (Get-Date).AddDays(-$d) -f yyyy\\MM\\dd)";
 	Write-Host "Creating folder $folder..."
 	New-Item -ItemType directory -Path $folder -Force
@@ -38,7 +39,7 @@ for($d = 0; $d -lt $daysCount; $d++) {
 		for($j = 1; $j -le $totalRows; $j++)
 		{
 			$p = Get-Random -minimum 0 -maximum $prods.length
-			$items += "{""productid"":""$($p+1)"",""title"":""$($prods[$p].title)"",""category"":""$($prods[$p].cat)"",""type"":""$(("add", "view") | Get-Random)"",""total"":""$(Get-Random -minimum 0 -maximum 200)""}`n"
+			$items += "{""logdate"":""$($newdate)"",""productid"":""$($p+1)"",""title"":""$($prods[$p].title)"",""category"":""$($prods[$p].cat)"",""type"":""$(("add", "view") | Get-Random)"",""total"":""$(Get-Random -minimum 0 -maximum 200)""}`r`n"
 		}
 		
 		$items = $items.Substring(0, $items.length - 1) 
