@@ -288,7 +288,7 @@ In this task, you'll write a Hive query to generate product stats (views and car
 
 1. Navigate to the HDInsight server dashboard: https://**{hdiclustername}**.azurehdinsight.net/. If the HDI server was created with _Linux_ the **Ambari** portal will be loaded.
 
-1. Log in using the username 'admin' and password 'P@ssword123'
+1. Log in using the username 'admin' and the password you entered when you created the cluster.
 
 1. If the HDI cluster was created using **Hadoop on Windows** (default when using Setup scripts), follow these steps:
 
@@ -339,26 +339,30 @@ In this task, you'll write a Hive query to generate product stats (views and car
 
 		_Hive view option in Ambari_
 
-	1. In the new worksheet, write HQL code to create a partitioned table for the existing blobs and then parse the JSON format. Paste the snippet below, replace the **<****StorageAccountName****>** and update the partition to be of a valid date and location (where the input logs were uploaded according to the current date):
+	1. In the new worksheet, write HQL code to create a partitioned table for the existing blobs and then parse the JSON format. Paste the snippet below, replace  **<****StorageAccountName****>** and update the partition to be of a valid date and location (where the input logs were uploaded according to the current date):
 
 		````SQL
 		DROP TABLE IF EXISTS LogsRaw;
 		CREATE EXTERNAL TABLE LogsRaw (jsonentry string) 
-		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/03/30";
+		PARTITIONED BY (year INT, month INT, day INT)
+		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/"
 
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=03, day=30) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/03/30';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=03) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/07/03';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=04) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/07/04';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=05) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/07/05';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=06) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/07/06';
 
 		SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT),
 				 get_json_object(jsonentry, "$.title"),
 				 get_json_object(jsonentry, "$.category"),
 				 get_json_object(jsonentry, "$.type"),
-				 CAST(get_json_object(jsonentry, "$.totalClicked") as BIGINT)
+				 CAST(get_json_object(jsonentry, "$.total") as BIGINT)
 		FROM LogsRaw;
 		````
 
 		> **Note**: The CREATE EXTERNAL TABLE command that we used here, creates an external table, the data file can be located outside the default container and does not move the data file.
 
-		![Hive editor](Images/ex2task1-ambari-hive-editor.png?raw=true "Hive editor")
+		![Hive editor](Images/ex2task1-ambari-hive-editor2.png?raw=true "Hive editor")
 
 		_Hive editor_
 
@@ -384,16 +388,16 @@ In this task, you'll write a Hive query to generate product stats (views and car
 		type string,
 		totalClicked int
 	) PARTITIONED BY (year int, month int, day int) 
-	ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' LINES TERMINATED BY '\n'
+	ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
 	STORED AS TEXTFILE LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/logs';
 	````
 
 1. **Submit** or **execute** the Hive query to create the output table.
 
 <a name="Ex1Task2"></a>
-#### Task 2 - Create the HQL script for the Hive Activity ####
+#### Task 2 - Create the HQL script for the ADF Hive Activity ####
 
-In this task, you'll reuse the Hive query to generate the HQL script for the Hive activity that will generate the output stats in a new storage blob.
+In this task, you'll review and set up the scripts that will be used in the Azure Data Factory lab.
 
 1. Open the file located in **Setup\Assets\HDInsight\Scripts\logstocsv.hql** and review its content:
 
@@ -419,7 +423,7 @@ In this task, you'll reuse the Hive query to generate the HQL script for the Hiv
 
     This script adds the partitiones by date to the input and output tables. The storage account name and all the required date components for the partitiones will be passed as parameters by the Hive action running in the Data Factory.
 
-1. These script was already uploaded to your storage during the module setup by using the manual steps or the **Setup.cmd** script. Verify the HQL script was uploaded by using the an storage explorer tool such as **Azure Storage Explorer** to navigate to the **Scripts** folder in the **partsunlimited** container.
+1. These scripts were already uploaded to your storage during the module setup by using the manual steps or the **Setup.cmd** script. Verify the HQL script was uploaded by using the an storage explorer tool such as **Azure Storage Explorer** to navigate to the **Scripts** folder in the **partsunlimited** container.
 
 	1. Open **Azure Storage Explorer**, right click on "Storage Account" tree item and select **Attach External Storage...**
 
@@ -451,11 +455,11 @@ In this task, you'll reuse the Hive query to generate the HQL script for the Hiv
 
 <a name="Exercise2"></a>
 ### Exercise 2: Loading and querying data in Azure SQL Data Warehouse ###
-The fastest way to import data into SQL Data Warehouse is to use **PolyBase** to load data from Azure blob storage. PolyBase uses SQL Data Warehouse's massively parallel processing (MPP) design to load data in parallel from Azure blob storage. To use PolyBase, you can use T-SQL commands or an Azure Data Factory pipeline.  This exercise will use a T-SQL command.  Later in the lab you will write an Azure Data Factory pipeline to load data with Polybase. 
+The fastest way to import data into SQL Data Warehouse is to use **PolyBase** to load data from Azure blob storage. PolyBase uses SQL Data Warehouse's massively parallel processing (MPP) design to load data in parallel from Azure blob storage. To use PolyBase, you can use T-SQL commands or an Azure Data Factory pipeline.  This exercise will use a T-SQL command.  Later in the lab you will write an Azure Data Factory pipeline to load data with PolyBase. 
 
-In this exercise you'll create an **External Table** using Polybase. You will build a new SQL Data Warehouse table using the Create Table As Select (CTAS) syntax and issue a few sample queries. 
+In this exercise you'll create an **External Table** using PolyBase. You will build a new SQL Data Warehouse table using the Create Table As Select (CTAS) syntax and issue a few sample queries. 
 
-Once you have had some experience using Polybase and querying Azure SQL Data Warehouse, you create the tables and stored procedures that will be used with Azure Data Factory later in the lab.
+Once you have had some experience using PolyBase and querying Azure SQL Data Warehouse, you create the tables and stored procedures that will be used with Azure Data Factory later in the lab.
 
 <a name="Ex2Task1"></a>
 #### Task 1 - Connect to Azure SQL Data Warehouse using Visual Studio 2015 ####
@@ -494,7 +498,7 @@ All scripts for this exercise are available in the folder Module2-GainInsights\S
     SECRET = '<Azure storage key>';
 	````
 
-1. Execute the following SQL statement in the new query window to create an external data source. Replace the _Azure storage account name_ placeholder with your Azure storage account name.  Note that Polybase uses Hadoop APIs to access data in Azure blob storage.  
+1. Execute the following SQL statement in the new query window to create an external data source. Replace the _Azure storage account name_ placeholder with your Azure storage account name.  Note that PolyBase uses Hadoop APIs to access data in Azure blob storage.  
 
 	````SQL
 	CREATE EXTERNAL DATA SOURCE AzureStorage
