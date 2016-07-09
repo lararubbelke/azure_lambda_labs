@@ -5,9 +5,9 @@
         "activities": [
 			{
 				 "type": "SqlServerStoredProcedure",
-				 "typeProperties": {
-					  "storedProcedureName": "sp_populate_stats"
-				 },
+        "typeProperties": {
+          "storedProcedureName": "adw.asp_populate_productlogsummary"
+        },
 				 "outputs": [
 					  {
 							"name": "StatsSqlDWOutput"

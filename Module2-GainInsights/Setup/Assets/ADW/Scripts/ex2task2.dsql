@@ -22,7 +22,7 @@ WITH
 CREATE EXTERNAL DATA SOURCE AzureStorage
 WITH (
     TYPE = HADOOP,
-    LOCATION = 'wasbs://samplelogs@<Azure storage account name>.blob.core.windows.net',
+    LOCATION = 'wasbs://dwdata@<Azure storage account name>.blob.core.windows.net',
     CREDENTIAL = AzureStorageCredential
 );
 

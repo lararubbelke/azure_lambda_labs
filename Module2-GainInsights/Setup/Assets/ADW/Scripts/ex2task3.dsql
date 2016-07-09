@@ -15,7 +15,7 @@ CREATE EXTERNAL TABLE asb.ProductLogExternal
 	TotalClicked int
 )
 WITH (
-    LOCATION='/07/',
+    LOCATION='/processedlogs/2016/07/',
     DATA_SOURCE=AzureStorage,
     FILE_FORMAT=TextFile
 );
@@ -24,6 +24,7 @@ WITH (
 -- Run a query on the external table
 
 SELECT COUNT(*) FROM asb.ProductLogExternal;
+
 SELECT
 	LogDate,
 	Category,

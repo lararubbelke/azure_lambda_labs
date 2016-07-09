@@ -3,28 +3,32 @@
     "properties": {
         "type": "AzureBlob",
         "linkedServiceName": "AzureStorageLinkedService",
-        "structure": [
-            {
-                "name": "productid",
-                "type": "Int32"
-            },
-            {
-                "name": "title",
-                "type": "String"
-            },
-            {
-                "name": "category",
-                "type": "String"
-            },
-            {
-                "name": "type",
-                "type": "String"
-            },
-            {
-                "name": "total",
-                "type": "Int32"
-            }
-        ],
+      "structure": [
+        {
+          "name": "logdate",
+          "type": "Int32"
+        },
+        {
+          "name": "productid",
+          "type": "Int32"
+        },
+        {
+          "name": "title",
+          "type": "String"
+        },
+        {
+          "name": "category",
+          "type": "String"
+        },
+        {
+          "name": "type",
+          "type": "String"
+        },
+        {
+          "name": "total",
+          "type": "Int32"
+        }
+      ],
         "typeProperties": {
             "folderPath": "processeddata/logs/{Year}/{Month}/{Day}",
             "partitionedBy": 

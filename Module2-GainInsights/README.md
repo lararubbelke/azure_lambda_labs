@@ -523,7 +523,7 @@ Now let's create the external tables. All we are doing here is defining column n
 		TotalClicked int
 	)
 	WITH (
-	    LOCATION='/07/',
+	    LOCATION='/processedlogs/2016/07/',
 	    DATA_SOURCE=AzureStorage,
 	    FILE_FORMAT=TextFile
 	);
@@ -629,13 +629,22 @@ Before we move to the next exercise, create a stored procedure to build a summar
 	GO
 	````
 
-1. Click execute button (**Ctrl+Shift+E**) to run the query.
+1. Click execute button (**Ctrl+Shift+E**) to run the statement and create the stored procedure.
 
-	![Creating schema for Data Warehouse](Images/setup-run-sql.png?raw=true "Creating schema for Data Warehouse")
+	![Creating schema for Data Warehouse](Images/ex2task5-create_proc.png?raw=true "Creating schema for Data Warehouse")
 
 	_Creating schema for Data Warehouse_
 
+1. Execute the stored procedure to create the table.  Issue a select statement on the ProductLogSummary table to verify the procedure executed correctly.
 
+	````SQL	
+
+	exec adw.asp_populate_productlogsummary; 
+
+	SELECT * FROM adw.ProductLogSummary;
+
+	````
+	
 
 <a name="Exercise3"></a>
 ### Exercise 3: Creating Azure Data Factory ###
@@ -658,7 +667,7 @@ _Data factory key concepts_
 
 
 <a name="Ex3Task1"></a>
-#### Task 1 - Creating the data factory in Azure Portal ####
+#### Task 1 - Creating the Data Factory in the Azure Portal ####
 
 In this task, you create a data factory to orchestrate the linked services and data transformation activities.
 
@@ -666,8 +675,8 @@ In this task, you create a data factory to orchestrate the linked services and d
 
 1. Use the following values to create the new data factory:
 
- 1. Enter a name for the data factory (for instance: **"PartsUnlimitedDataFactory"**).
- 1. In the **Resource group name** blade, click **Or create new** and use **"DataCodeLab"** for the name.
+ 1. Enter a name for the data factory.  
+ 1. Click **Use existing** under Resource group and select the resource group you created at the start of the lab.  
  1. Make sure the **Pin to dashboard** is selected so you can have a quick access and click **Create**.
 
 	![New data factory blade](Images/ex1task2-new-data-factory.png?raw=true "New data factory blade")
@@ -854,6 +863,10 @@ In this task, you'll create the input and output tables corresponding to the lin
 		````JavaScript
 		"structure": [
 			{
+				"name": "logdate",
+				"type": "Int32"
+			},
+			{
 				"name": "productid",
 				"type": "Int32"
 			},
@@ -912,6 +925,10 @@ In this task, you'll create the input and output tables corresponding to the lin
 				"linkedServiceName": "AzureStorageLinkedService",
 				"structure": [
 					{
+						"name": "logdate",
+						"type": "Int32"
+					},					
+					{
 						"name": "productid",
 						"type": "Int32"
 					},
@@ -963,6 +980,10 @@ In this task, you'll create the input and output tables corresponding to the lin
 		````JavaScript
 		"structure": [
 			{
+				"name": "logdate",
+				"type": "Int32"
+			},
+			{
 				"name": "productid",
 				"type": "Int32"
 			},
@@ -985,11 +1006,11 @@ In this task, you'll create the input and output tables corresponding to the lin
 		],
 		````
 
- 1. Set the **tableName** property to **dbo.ProductLogs**:
+ 1. Set the **tableName** property to **adw.FactProductLog**:
 
 		````JavaScript
 		"typeProperties": {
-			"tableName": "dbo.ProductLogs"
+			"tableName": "adw.FactProductLog"
 		},
 		````
 
@@ -1012,6 +1033,10 @@ In this task, you'll create the input and output tables corresponding to the lin
 				"linkedServiceName": "AzureSqlDWLinkedService",
 				"structure": [
 					{
+						"name": "logdate",
+						"type": "Int32"
+					},
+					{
 						"name": "productid",
 						"type": "Int32"
 					},
@@ -1033,7 +1058,7 @@ In this task, you'll create the input and output tables corresponding to the lin
 					}
 				],
 				"typeProperties": {
-					"tableName": "dbo.ProductLogs"
+					"tableName": "adw.FactProductLog"
 				},
 				"availability": {
 					"frequency": "Day",
@@ -1183,7 +1208,7 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
 
 1. Set the **end** date to be tomorrow.
 
-1. Add a Move activity to move the generated tabular blobs to the SQL Data Warehouse. Make sure to replace the **<****StorageAccountName****>** placeholder with the storage account name:
+1. Add a Move activity to move the generated tabular blobs to the SQL Data Warehouse.
 
 	````JavaScript
 	"activities": [
@@ -1295,7 +1320,7 @@ You can use the SQL Server Stored Procedure activity in a Data Factory pipeline 
 
 		````JavaScript
 		"typeProperties": {
-			"tableName": "dbo.ProductLogs"
+			"tableName": "adw.FactProductLog"
 		},
 		````
 
@@ -1318,7 +1343,7 @@ You can use the SQL Server Stored Procedure activity in a Data Factory pipeline 
 				  "type": "AzureSqlDWTable",
 				  "linkedServiceName": "AzureSqlDWLinkedService",
 				  "typeProperties": {
-						"tableName": "dbo.ProductStats"
+						"tableName": "adw.ProductLogSummary"
 				  },
 				  "availability": {
 						"frequency": "Day",
@@ -1342,7 +1367,7 @@ You can use the SQL Server Stored Procedure activity in a Data Factory pipeline 
 			{
 				 "type": "SqlServerStoredProcedure",
 				 "typeProperties": {
-					  "storedProcedureName": "sp_populate_stats"
+					  "storedProcedureName": "adw.asp_populate_productlogsummary"
 				 },
 				 "outputs": [
 					  {

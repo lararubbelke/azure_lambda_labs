@@ -5,6 +5,7 @@ STORED AS TEXTFILE LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.cor
 
 DROP TABLE IF EXISTS OutputTable;
 CREATE EXTERNAL TABLE OutputTable (
+logdate int,
 productid int,
 title string,
 category string,
