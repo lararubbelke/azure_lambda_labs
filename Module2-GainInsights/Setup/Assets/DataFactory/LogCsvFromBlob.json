@@ -5,27 +5,27 @@
         "linkedServiceName": "AzureStorageLinkedService",
       "structure": [
         {
-          "name": "logdate",
+          "name": "LogDate",
           "type": "Int32"
         },
         {
-          "name": "productid",
+          "name": "ProductID",
           "type": "Int32"
         },
         {
-          "name": "title",
+          "name": "Title",
           "type": "String"
         },
         {
-          "name": "category",
+          "name": "Category",
           "type": "String"
         },
         {
-          "name": "type",
+          "name": "ProdType",
           "type": "String"
         },
         {
-          "name": "total",
+          "name": "TotalClicked",
           "type": "Int32"
         }
       ],

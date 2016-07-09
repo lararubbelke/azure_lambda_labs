@@ -649,6 +649,12 @@ Before we move to the next exercise, create a stored procedure to build a summar
 <a name="Exercise3"></a>
 ### Exercise 3: Creating Azure Data Factory ###
 
+The next exercise will walk you through automating a data pipeline using Azure Data Factory.  At the end of this section you will have a data pipeline that will process data with HDInsight, move data from HDInsight to Azure Data Warehouse, and execute a stored procedure on Azure Data Warehouse to populate a summary table on a daily schedule.  This is a canonical workload whereby you will use HDInsight for large batch processing and move data to a relational structure where it can be readily consumed by end user reporting and analysis tools. You will also be introduced to the Monitoring tool for Azure Data Factory. 
+
+All JSON assets to create the Data Factory objects are available in _Module2-GainInsights\Setup\Assets\DataFactory_.
+
+_Data factory key concepts_
+
 Azure Data Factory has a few key entities that work together to define the input and output data, processing events, and the schedule and resources required to execute the desired data flow.
 
 - **Activities**: Activities define the actions to perform on your data. Each activity takes zero or more datasets as inputs and produces one or more datasets as outputs.
@@ -656,12 +662,8 @@ Azure Data Factory has a few key entities that work together to define the input
 - **Datasets**: Datasets are named references/pointers to the data you want to use as an input or an output of an Activity. Datasets identify data structures within different data stores including tables, files, folders, and documents.
 - **Linked service**: Linked services define the information needed for Data Factory to connect to external resources (data stores or compute resources for hosting activities execution).
 
-In this exercise, you'll create a Data Factory with the linked services (Azure Storage, HDI cluster and SQL Data Warehouse) and datasets for the ingest data and output stores.
-
 
 ![Data factory key concepts](Images/data-factory-exercises.png?raw=true "Data factory key concepts")
-
-_Data factory key concepts_
 
 > **Note:** If you need to skip the manual instructions to create the data factory and provisioning of the linked services, datasets and pipelines. You can run the CreateDataFactory.cmd script to quickly provision it.
 
@@ -688,7 +690,11 @@ In this task, you create a data factory to orchestrate the linked services and d
 <a name="Ex3Task2"></a>
 #### Task 2 - Adding the linked services ####
 
-In this task, you'll create the linked services.
+In this task, you'll create the linked services.  Linked Services are essentially connections to data sources and destinations. At the end of this task you will have created the following linked services:
+- Azure Storage
+- HDInsight
+- Azure Data Warehouse
+
 
 1. In the *Data Factory* blade, click **Author and deploy** tile to launch the *Editor* for the data factory.
 
@@ -863,27 +869,27 @@ In this task, you'll create the input and output tables corresponding to the lin
 		````JavaScript
 		"structure": [
 			{
-				"name": "logdate",
+				"name": "LogDate",
 				"type": "Int32"
 			},
 			{
-				"name": "productid",
+				"name": "ProductID",
 				"type": "Int32"
 			},
 			{
-				"name": "title",
+				"name": "Title",
 				"type": "String"
 			},
 			{
-				"name": "category",
+				"name": "Category",
 				"type": "String"
 			},
 			{
-				"name": "type",
+				"name": "ProdType",
 				"type": "String"
 			},
 			{
-				"name": "totalClicked",
+				"name": "TotalClicked",
 				"type": "Int32"
 			}
 		],
@@ -925,27 +931,27 @@ In this task, you'll create the input and output tables corresponding to the lin
 				"linkedServiceName": "AzureStorageLinkedService",
 				"structure": [
 					{
-						"name": "logdate",
+						"name": "LogDate",
 						"type": "Int32"
 					},					
 					{
-						"name": "productid",
+						"name": "ProductID",
 						"type": "Int32"
 					},
 					{
-						"name": "title",
+						"name": "Title",
 						"type": "String"
 					},
 					{
-						"name": "category",
+						"name": "Category",
 						"type": "String"
 					},
 					{
-						"name": "type",
+						"name": "ProdType",
 						"type": "String"
 					},
 					{
-						"name": "totalClicked",
+						"name": "TotalClicked",
 						"type": "Int32"
 					}
 				],
@@ -980,27 +986,27 @@ In this task, you'll create the input and output tables corresponding to the lin
 		````JavaScript
 		"structure": [
 			{
-				"name": "logdate",
+				"name": "LogDate",
 				"type": "Int32"
 			},
 			{
-				"name": "productid",
+				"name": "ProductID",
 				"type": "Int32"
 			},
 			{
-				"name": "title",
+				"name": "Title",
 				"type": "String"
 			},
 			{
-				"name": "category",
+				"name": "Category",
 				"type": "String"
 			},
 			{
-				"name": "type",
+				"name": "ProdType",
 				"type": "String"
 			},
 			{
-				"name": "totalClicked",
+				"name": "TotalClicked",
 				"type": "Int32"
 			}
 		],
@@ -1033,27 +1039,27 @@ In this task, you'll create the input and output tables corresponding to the lin
 				"linkedServiceName": "AzureSqlDWLinkedService",
 				"structure": [
 					{
-						"name": "logdate",
+						"name": "LogDate",
 						"type": "Int32"
 					},
 					{
-						"name": "productid",
+						"name": "ProductID",
 						"type": "Int32"
 					},
 					{
-						"name": "title",
+						"name": "Title",
 						"type": "String"
 					},
 					{
-						"name": "category",
+						"name": "Category",
 						"type": "String"
 					},
 					{
-						"name": "type",
+						"name": "Type",
 						"type": "String"
 					},
 					{
-						"name": "totalClicked",
+						"name": "TotalClicked",
 						"type": "Int32"
 					}
 				],
@@ -1084,13 +1090,12 @@ Now you finished creating the input/output datasets and the associated linked se
 <a name="Ex4Task1"></a>
 #### Task 1 - Create the pipeline that will run the Hive activity ####
 
-**Pipeline** is a logical grouping of Activities. They are used to group activities into a unit that performs a task.
+In this task, you'll create the pipeline to generate the stats output using a _HDInsight Hive activity_.  This output will be processed to Azure Data Warehouse in the next task.  Data is processed in a pipeline.  A **Pipeline** is a logical grouping of Activities. They are used to group activities into a unit that performs a task.
 
 **Activities** define the actions to perform on your data. Each activity takes zero or more datasets as inputs and produces one or more datasets as output. An activity is a unit of orchestration in Azure Data Factory.
 
 An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 
-In this task, you'll create the pipeline to generate the stats output using a _HDInsight Hive activity_.
 
 1. Go back to the Azure Portal and open the **Data Factory**.
 
@@ -1198,6 +1203,7 @@ In this task, you'll create the pipeline to generate the stats output using a _H
 
 <a name="Ex4Task2"></a>
 #### Task 2 - Create a new pipeline to move the HDI output to SQL Data Warehouse ####
+
 In this task, you'll create a new pipeline to move the Hive activity output (stored in a blob) to the SQL Data Warehouse database so it can be consumed using Power BI in the next exercise.
 
 1. In the **Author and Deploy** blade of the Data Factory, click **New pipeline** button on the toolbar (click ellipsis button if you don't see the New pipeline button).
@@ -1309,7 +1315,8 @@ There are more features to continue exploring in the Monitoring App. You can als
 
 <a name="Ex4Task4"></a>
 #### Task 4 - Executing Stored Procedure in SQL Data Warehouse ####
-In this task you will add a new pipeline to run the stored procedure that populates the ProductStats table in the SQL Data Warehouse.
+
+In this task you will add a new pipeline to run the stored procedure that populates the adw.ProductLogSummary table in the SQL Data Warehouse.
 
 You can use the SQL Server Stored Procedure activity in a Data Factory pipeline to invoke a stored procedure.
 
@@ -1391,7 +1398,7 @@ You can use the SQL Server Stored Procedure activity in a Data Factory pipeline 
 
 	_New pipeline to run stored procedure_
 
-1. Make sure the output dataset slices are ran so the ProductStats table is populated and you can proceed with the next exercise to consume the just populated table.
+1. Make sure the output dataset slices have completed with success so the adw.ProductLogSummary table is populated.  Once the summary table is populated you can proceed with the next exercise to consume the just populated table.
 
 	![New pipeline output slices](Images/ex3task4-sp-pipeline-slices.png?raw=true "New pipeline output slices")
 
