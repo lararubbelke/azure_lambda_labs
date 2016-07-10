@@ -1453,7 +1453,7 @@ In this task, you'll create a report based on the SQL Data Warehouse dataset you
 
 	In the navigation pane, your reports are listed under the **Reports** heading. Each listed report represents one or more pages of visualizations based on one or more of the underlying datasets.
 
-1. In the _Fields_ pane, check **category** and **views** from the **ProductStats** table.
+1. In the _Fields_ pane, check **category** and **views** from the **adf.ProductLogSummary** table.
 
 	![Product fields](Images/ex4task2-fields.png?raw=true "Product fields")
 
@@ -1493,20 +1493,6 @@ In this task, you'll create a report based on the SQL Data Warehouse dataset you
 
 	_Save report_
 
-<a name="Ex5Task3"></a>
-#### Task 3 - Pause Azure SQL Data Warehouse####
-
-1. Now that the data was processed by the stored procedure and populated the _ProductStats_ table, you can now pause the Data Warehouse. Navigate to the SQL Data Warehouse blade and click **Pause**.
-
-	![Pause SQL Data Warehouse](Images/ex3task4-pause-dw.png?raw=true "Pause SQL Data Warehouse")
-
-	_Pause SQL Data Warehouse_
-
-1. Confirm you want to pause the data warehouse.
-
-	Unique to SQL Data Warehouse is the ability to _pause_ and _resume_ compute on demand. If the team will not be using the Data Warehouse instance for a period of time, like nights, weekends, certain holidays or for any other reason, you can pause the Data Warehouse instance for that period of time and pick up where you left off when you return. 
-
-	> **Note:** Since storage is separate from compute, your storage is unaffected by pause and you can continue having access to it. For instance, using Power BI as you will do in next exercise.
 ---
 
 <a name="Summary"></a>
@@ -1514,8 +1500,9 @@ In this task, you'll create a report based on the SQL Data Warehouse dataset you
 
 By completing this module, you should have:
 
-- Created an **Azure Data Factory**
-- Created a **Hive** query to do analytics on your data
-- Orchestrated an **Azure Data Factory** workflow
-- Moved Data from **HDInsight** to **SQL Data Warehouse**
-- Used the data in **SQL Data Warehouse** to generate **Power BI** visualizations
+- Create a **HDInsight Cluster** and issue a **Hive** query to do analytics on your data
+- Create an **Azure Data Warehouse** and load data from Azure storage
+- Create an **Azure Data Factory** and orchestrate an **Azure Data Factory** workflow
+- Automate data movement from **HDInsight** to **SQL Data Warehouse**
+- Use the data in **SQL Data Warehouse** to generate **Power BI** visualizations
+
