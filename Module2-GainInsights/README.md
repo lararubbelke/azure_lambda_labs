@@ -21,7 +21,7 @@ In this module, you'll see how to:
 - Create a **HDInsight Cluster** and issue a **Hive** query to do analytics on your data
 - Create an **Azure Data Warehouse** and load data from Azure storage
 - Create an **Azure Data Factory** and orchestrate an **Azure Data Factory** workflow
-- Automate data movement from **HDInsight** to **SQL Data Warehouse**
+- Automate data movement from **HDInsight** to **SQL Data Warehouse** using **Polybase**
 - Use the data in **SQL Data Warehouse** to generate **Power BI** visualizations
 
 <a name="Prerequisites"></a>
@@ -31,9 +31,11 @@ The following is required to complete this module:
 
 - [Microsoft Visual Studio Community 2015][1] or greater
 - [Microsoft Azure Storage Explorer][2] or any other tool to manage Azure Storage
+- [Microsoft Azure PowerShell][3] (1.0 or above) 
 
 [1]: https://www.visualstudio.com/products/visual-studio-community-vs
 [2]: http://storageexplorer.com/
+[3]: https://azure.microsoft.com/en-us/documentation/articles/powershell-install-configure/
 
 <a name="Setup"></a>
 ### Setup ###
