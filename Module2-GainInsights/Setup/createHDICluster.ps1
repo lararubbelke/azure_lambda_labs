@@ -81,8 +81,8 @@ $config = New-AzureRmHDInsightClusterConfig `
     -ClusterType Hadoop 
 
 $hdi = New-AzureRmHDInsightCluster `
-	-OSType Windows `
-	-Version "3.3" `
+	-OSType Linux `
+	-Version "3.4" `
 	-ClusterSizeInNodes 2 `
 	-ResourceGroupName $resourceGroupName `
 	-ClusterName $clusterName `
