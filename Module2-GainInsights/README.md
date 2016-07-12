@@ -39,7 +39,7 @@ The following is required to complete this module:
 
 <a name="Setup"></a>
 ### Setup ###
-In order to run the exercises in this module, you'll need to create an HDI cluster, a SQL Data Warehouse, a storage account and upload some asset files. You can do this manually or run the **Setup.cmd** script in the **Setup** folder as detailed below.
+In order to run the exercises in this module, you'll need to create an HDI cluster, a SQL Data Warehouse, a storage account and upload some asset files. 
 
 > **Important:** when entering the names for the storage account, SQL DW server and HDInsight server, those must be **globally unique**. To ensure this, you can use your first and last name as prefixes for the resource names. For instance: "johndoestorage", "johndoehdi" and "johndoesqlserver".
 
