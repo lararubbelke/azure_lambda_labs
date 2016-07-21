@@ -24,28 +24,49 @@ GO
 
 CREATE STATISTICS Stat_adw_FactProductLog_LogDate on adw.FactProductLog(LogDate) WITH FULLSCAN;
 CREATE STATISTICS Stat_adw_FactProductLog_ProductID on adw.FactProductLog(ProductID);
-CREATE STATISTICS Stat_adw_FactProductLog_category on adw.FactProductLog(category);
-CREATE STATISTICS Stat_adw_FactProductLog_title on adw.FactProductLog(title);
-CREATE STATISTICS Stat_adw_FactProductLog_prodtype on adw.FactProductLog(prodtype);
-CREATE STATISTICS Stat_adw_FactProductLog_totalclicked on adw.FactProductLog(totalclicked);
+CREATE STATISTICS Stat_adw_FactProductLog_category on adw.FactProductLog(Category);
+CREATE STATISTICS Stat_adw_FactProductLog_title on adw.FactProductLog(Title);
+CREATE STATISTICS Stat_adw_FactProductLog_prodtype on adw.FactProductLog(ProdType);
+CREATE STATISTICS Stat_adw_FactProductLog_totalclicked on adw.FactProductLog(TotalClicked);
 
+/*
 -- View the distribution of rows across the partitions
 DBCC SHOW_STATISTICS ([adw.FactProductLog], Stat_adw_FactProductLog_LogDate) WITH histogram--, density_vector
 
-SELECT  QUOTENAME(s.[name])+'.'+QUOTENAME(t.[name]) as Table_name
-,       i.[name] as Index_name
-,       p.partition_number as Partition_nmbr
-,       p.[rows] as Row_count
-,       p.[data_compression_desc] as Data_Compression_desc
-FROM    sys.partitions p
-JOIN    sys.tables     t    ON    p.[object_id]   = t.[object_id]
-JOIN    sys.schemas    s    ON    t.[schema_id]   = s.[schema_id]
-JOIN    sys.indexes    i    ON    p.[object_id]   = i.[object_Id]
-                            AND   p.[index_Id]    = i.[index_Id]
-WHERE t.[name] = 'FactProductLog' AND s.[name]='ADW'
-
+--View the statistics through the DMVs
+WITH base
+AS
+(
+SELECT  sm.name                             AS schema_name
+,       tb.name                             AS table_name
+,       tm.object_id                        AS logical_object_id
+,       tm.physical_name                    AS physical_name
+,       nt.object_id                        AS physical_object_id
+,       ps.row_count                        AS ptn_row_count
+,       ps.partition_number                 AS ptn_nmbr
+FROM    sys.schemas                         AS sm
+JOIN    sys.tables                          AS tb   ON  sm.schema_id        = tb.schema_id
+JOIN    sys.pdw_table_mappings              AS tm   ON  tb.object_id        = tm.object_id
+JOIN    sys.pdw_nodes_tables                AS nt   ON  tm.physical_name    = nt.[name]
+JOIN    sys.dm_pdw_nodes_db_partition_stats AS ps   ON  nt.object_id        = ps.object_id
+                                                    AND nt.distribution_id  = ps.distribution_id
+)
+SELECT  table_name
+,       ptn_nmbr
+,       SUM(ptn_row_count)
+FROM    base
+WHERE   1=1
+AND     schema_name = 'adw'
+AND     table_name = 'FactProductLog'
+GROUP BY
+        table_name
+,       ptn_nmbr
+;
+GO
+ 
+-- Total rows by partition
 SELECT COUNT(*), LogDate
 FROM adw.FactProductLog
 GROUP BY LogDate
 
-
+*/

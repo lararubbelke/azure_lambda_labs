@@ -19,17 +19,18 @@ WITH (
     DATA_SOURCE=AzureStorage,
     FILE_FORMAT=TextFile
 );
-
+GO
 
 -- Run a query on the external table
-
+/*
 SELECT COUNT(*) FROM asb.ProductLogExternal;
 
 SELECT
 	LogDate,
 	Category,
 	Title,
-	SUM(CASE WHEN prodtype = 'view' THEN totalClicked ELSE 0 END) AS ProdViews,
-	SUM(CASE WHEN prodtype = 'add' THEN totalClicked ELSE 0 END) AS ProdAdds
+	SUM(CASE WHEN prodtype = 'view' THEN TotalClicked ELSE 0 END) AS ProdViews,
+	SUM(CASE WHEN prodtype = 'add' THEN TotalClicked ELSE 0 END) AS ProdAdds
 FROM asb.ProductLogExternal 
 GROUP BY LogDate, Title, Category
+*/
