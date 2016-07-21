@@ -355,12 +355,12 @@ In this task, you'll write a Hive query to generate product stats (views and car
 		DROP TABLE IF EXISTS LogsRaw;
 		CREATE EXTERNAL TABLE LogsRaw (jsonentry string) 
 		PARTITIONED BY (year INT, month INT, day INT)
-		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@lararuk.blob.core.windows.net/logs/";
+		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<Azure Storage Account Name>.blob.core.windows.net/logs/";
 
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=03) LOCATION 'wasb://partsunlimited@lararuk.blob.core.windows.net/logs/2016/07/03';
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=04) LOCATION 'wasb://partsunlimited@lararuk.blob.core.windows.net/logs/2016/07/04';
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=05) LOCATION 'wasb://partsunlimited@lararuk.blob.core.windows.net/logs/2016/07/05';
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=06) LOCATION 'wasb://partsunlimited@lararuk.blob.core.windows.net/logs/2016/07/06';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=03) LOCATION 'wasb://partsunlimited@<Azure Storage Account Name>.blob.core.windows.net/logs/2016/07/03';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=04) LOCATION 'wasb://partsunlimited@<Azure Storage Account Name>.blob.core.windows.net/logs/2016/07/04';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=05) LOCATION 'wasb://partsunlimited@<Azure Storage Account Name>.blob.core.windows.net/logs/2016/07/05';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=06) LOCATION 'wasb://partsunlimited@<Azure Storage Account Name>.blob.core.windows.net/logs/2016/07/06';
 
 
 		SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT),
@@ -398,7 +398,7 @@ In this task, you'll write a Hive query to generate product stats (views and car
 		title string,
 		category string,
 		type string,
-		totalClicked int
+		totalclicked int
 	) 
 	ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
 	STORED AS TEXTFILE LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/logs';
