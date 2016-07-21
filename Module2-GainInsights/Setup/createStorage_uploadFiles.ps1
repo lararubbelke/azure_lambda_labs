@@ -1,5 +1,6 @@
-﻿$HDInsightFolder = 'C:\Users\larar\Documents\GitHub\azure_lambda_labs\Module2-GainInsights\Setup\Assets\HDInsight' # folder where are the files to be uploaded to the storage
-$dwdataFolder = 'C:\Users\larar\Documents\GitHub\azure_lambda_labs\Module2-GainInsights\Setup\Assets\ADW' # folder where are the files to be uploaded to the storage
+﻿$HDInsightFolder = '<local path of the HDInsights log folder. For example C:\GitHub\azure_lambda_labs\Module2-GainInsights\Setup\Assets\HDInsight>' 
+$dwdataFolder = '<local path of the ADW log folder. For example C:\GitHub\azure_lambda_labs\Module2-GainInsights\Setup\Assets\ADW>' 
+
 
 Login-AzureRmAccount
 

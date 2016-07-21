@@ -53,26 +53,19 @@ In this section you will create a new storage account, and load sample data that
 	1. Update the $dwdataFolder variable with the local path where you stored the sample log files for the ADW lab.  
 	1. Save the changes.
 1. Execute the PowerShell script.  
-1. When prompted, input a globally unique name for the Resource Group.
+1. When prompted, input a globally unique name for the Resource Group. Remember the name of the resoruce group, you will use this same resource group when creating the HDI cluster, SQL Data Warehouse and Data Factory.
 1. When prompted, input a globally unique name for the Storage Account.
 
 1. In the [Microsoft Azure portal](https://portal.azure.com/), create a new Storage Account.
- 1. Navigate New > Data + Storage > Storage Account. 
  1. Provide a globally unique name for the new storage account. 
  1. Select "_Resource Manager_" for the deployment model.
  1. Select the "_Standard Locally Redundant_" (Standard-LRS) storage account type.  
 	 	>**Note:** Under normal circumstances, you may choose to replicate across regions to support recovery scenarios.  This lab will not require geo-redundency. 
 
- 1. Create a new _Resource Group_ with a globally unique name.  You will use this same resource group when creating the HDI cluster, SQL Data Warehouse and Data Factory.
- 1. Select a location.  You will use this same location for the other services.
- 1. Select Pin to Dashboard so you can easily access the storage account in future exercises. 
- 1. Click **Create**.  The deployment will complete in about 1-3 minutes. 
-
-	![New storage account](Images/setup-new-storage.png?raw=true "New storage account")
-
-	_New storage account_
-
-1. When the storage account has been provisioned, select Access Keys from the Settings blade to copy the storage account key.  
+1. When the storage account has been provisioned and the files are uploaded, open the [Microsoft Azure portal](https://portal.azure.com/) to copy the storage account access key.
+	1. Navigate to All Resources and type the name of your storage account in the Filter items box.  
+	1. Click on the storage account.
+	1. Select Access Keys from the Settings blade to copy the storage account key.  
 	> **Note:** You will use the storage key in several steps during this lab. **Copy this to a text file and save in a readily accessible location (ie Desktop).**
 
 	![Getting account name and key](Images/setup-storage-key.png?raw=true "Getting account name and key")
@@ -80,7 +73,7 @@ In this section you will create a new storage account, and load sample data that
 	_Getting account name and key_
 
 
-1. Use **Azure Storage Explorer** or the tool of your preference to connect to the new storage account using the account name and key from the previous step. 
+1. Open **Azure Storage Explorer** or the tool of your preference to connect to the new storage account using the account name and key from the previous step. 
 	1. On the left pane of _Azure Storage Explorer_, right-click on **Storage Accounts** and select **Connect to Azure Storage...** 
 	1. Enter the account name and key in the dialog, then click **OK**.
 
@@ -94,24 +87,8 @@ In this section you will create a new storage account, and load sample data that
 
 	> _Add an Account_
 
-1. Create three new Blob Containers with "Container" access level. 
-	1. In _Azure Storage Explorer_ expand your account and right-click on **Blob Containers**, select **Create Blob Container** and enter **partsunlimited**. Press enter to create the container. 
-	1. Right-click on the new container and select **Set Public Access Level..** and choose **Public read access for container and blobs**.
-	1. Repeat steps 1-2 to create another Blob Container with the name "**processeddata**".  This container will be used to store the result from the HDI processing and ADF workflow.
-	1. Repeat steps 1-2 to create another Blob Container with the name "**dwdata**".  This container will be used to store sample logs for the SQL Data Warehouse introduction lab.
-
-1. Upload the **logs** folder and subfolders (in _Setup\Assets\HDInsight_) to the **partsunlimited** container.
-	1. Right-click on the **partsunlimited** container and select **Open Blob Container Editor**.
-	1. Click **Upload** and choose **Upload folder**. 
-	1. In the _Upload folder_ dialog, select the **logs** folder from _Setup\Assets\HDInsight_ and then click **Upload**.
-	1. Repeat the previous steps to upload the **Scripts** folder (from _Setup\Assets\HDInsight_) to the partsunlimited container.
-
-1. Upload the **processedlogs** folder (in _Setup\Assets\ADW_) to the **dwdata** container.
-	1. Right-click on the **dwdata** container and select **Open Blob Container Editor**.
-	1. Click **Upload** and choose **Upload folder**. 
-	1. In the _Upload folder_ dialog, select the **processedlogs** folder (from _Setup\Assets\ADW_) and then click **Upload**.
-
-> **Note:** Alternatively, you could use the [Blob Service REST API](https://msdn.microsoft.com/en-us/library/azure/dd135733.aspx) to automate the files upload.
+1. Verify the three new Blob Containers exist. 
+	1. In _Azure Storage Explorer_ expand your account and expand **Blob Containers** to verify containers with the name **partsunlimited**, **processeddata**, and "**dwdata**"
 
 You should now have sample data and a new storage account with three blob containers. 
 
@@ -355,20 +332,18 @@ In this task, you'll write a Hive query to generate product stats (views and car
 		DROP TABLE IF EXISTS LogsRaw;
 		CREATE EXTERNAL TABLE LogsRaw (jsonentry string) 
 		PARTITIONED BY (year INT, month INT, day INT)
-		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@lararuk.blob.core.windows.net/logs/";
+		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/"
 
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=03) LOCATION 'wasb://partsunlimited@lararuk.blob.core.windows.net/logs/2016/07/03';
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=04) LOCATION 'wasb://partsunlimited@lararuk.blob.core.windows.net/logs/2016/07/04';
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=05) LOCATION 'wasb://partsunlimited@lararuk.blob.core.windows.net/logs/2016/07/05';
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=06) LOCATION 'wasb://partsunlimited@lararuk.blob.core.windows.net/logs/2016/07/06';
-
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=03) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/07/03';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=04) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/07/04';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=05) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/07/05';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=06) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/07/06';
 
 		SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT),
 				 get_json_object(jsonentry, "$.title"),
 				 get_json_object(jsonentry, "$.category"),
 				 get_json_object(jsonentry, "$.type"),
-				 CAST(get_json_object(jsonentry, "$.total") as BIGINT),
-		 		 CAST(get_json_object(jsonentry, "$.logdate") as int) 
+				 CAST(get_json_object(jsonentry, "$.total") as BIGINT)
 		FROM LogsRaw;
 		````
 
@@ -388,7 +363,7 @@ In this task, you'll write a Hive query to generate product stats (views and car
 
 	> **Note:** Ambari portal offers many features over the Windows dashboard. You can create advanced visualization of the data results using charts, customize the Hive settings, create customized views, among many other options. To learn more about Ambari portal go to [Manage HDInsight clusters by using the Ambari Web UI](https://azure.microsoft.com/documentation/articles/hdinsight-hadoop-manage-ambari/).
 
-1. Write a new Hive query to create the output table using a columns schema matching the output of the previous query. Paste the snippet below and replace the **StorageAccountName** placeholder.
+1. Write a new Hive query to create the output partitioned table using a columns schema matching the output of the previous query. Paste the snippet below and replace the **StorageAccountName** placeholder.
 
 	````SQL
 	DROP TABLE IF EXISTS OutputTable;
@@ -399,7 +374,7 @@ In this task, you'll write a Hive query to generate product stats (views and car
 		category string,
 		type string,
 		totalClicked int
-	) 
+	) PARTITIONED BY (year int, month int, day int) 
 	ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
 	STORED AS TEXTFILE LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/logs';
 	````
@@ -414,14 +389,12 @@ In this task, you'll review and set up the scripts that will be used in the Azur
 1. Open the file located in **Setup\Assets\HDInsight\Scripts\logstocsv.hql** and review its content:
 
 	````SQL
-	INSERT OVERWRITE TABLE OutputTable 
-	SELECT 
-		CAST(get_json_object(jsonentry, "$.productid") as BIGINT) as productid,
-		get_json_object(jsonentry, "$.title") as title,
-		get_json_object(jsonentry, "$.category") as category,
-		get_json_object(jsonentry, "$.type") as prodtype,
-		CAST(get_json_object(jsonentry, "$.total") as BIGINT) as totalClicked,
-		CAST(get_json_object(jsonentry, "$.logdate") as int) as logdate
+	INSERT OVERWRITE TABLE OutputTable Partition (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day})
+	SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT) as productid,
+         get_json_object(jsonentry, "$.title") as title,
+         get_json_object(jsonentry, "$.category") as category,
+         get_json_object(jsonentry, "$.type") as type,
+         CAST(get_json_object(jsonentry, "$.totalClicked") as BIGINT) as totalClicked
 	FROM LogsRaw
 	````
 
@@ -432,6 +405,7 @@ In this task, you'll review and set up the scripts that will be used in the Azur
 	````SQL
 	ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day}) LOCATION 'wasb://partsunlimited@${hiveconf:StorageAccountName}.blob.core.windows.net/logs/${hiveconf:Year}/${hiveconf:Month}/${hiveconf:Day}';
 
+	ALTER TABLE OutputTable ADD IF NOT EXISTS PARTITION (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day}) LOCATION 'wasb://processeddata@${hiveconf:StorageAccountName}.blob.core.windows.net/logs/${hiveconf:Year}/${hiveconf:Month}/${hiveconf:Day}';
 	````
 
     This script adds the partitiones by date to the input and output tables. The storage account name and all the required date components for the partitiones will be passed as parameters by the Hive action running in the Data Factory.

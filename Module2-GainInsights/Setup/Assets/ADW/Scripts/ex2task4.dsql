@@ -22,15 +22,15 @@ SELECT
 FROM asb.ProductLogExternal
 GO
 
-CREATE STATISTICS Stat_adw_FactProductLog_LogDate on adw.FactProductLog(LogDate);
+CREATE STATISTICS Stat_adw_FactProductLog_LogDate on adw.FactProductLog(LogDate) WITH FULLSCAN;
 CREATE STATISTICS Stat_adw_FactProductLog_ProductID on adw.FactProductLog(ProductID);
 CREATE STATISTICS Stat_adw_FactProductLog_category on adw.FactProductLog(category);
 CREATE STATISTICS Stat_adw_FactProductLog_title on adw.FactProductLog(title);
 CREATE STATISTICS Stat_adw_FactProductLog_prodtype on adw.FactProductLog(prodtype);
 CREATE STATISTICS Stat_adw_FactProductLog_totalclicked on adw.FactProductLog(totalclicked);
 
-
 -- View the distribution of rows across the partitions
+DBCC SHOW_STATISTICS ([adw.FactProductLog], Stat_adw_FactProductLog_LogDate) WITH histogram--, density_vector
 
 SELECT  QUOTENAME(s.[name])+'.'+QUOTENAME(t.[name]) as Table_name
 ,       i.[name] as Index_name
@@ -43,3 +43,9 @@ JOIN    sys.schemas    s    ON    t.[schema_id]   = s.[schema_id]
 JOIN    sys.indexes    i    ON    p.[object_id]   = i.[object_Id]
                             AND   p.[index_Id]    = i.[index_Id]
 WHERE t.[name] = 'FactProductLog' AND s.[name]='ADW'
+
+SELECT COUNT(*), LogDate
+FROM adw.FactProductLog
+GROUP BY LogDate
+
+
