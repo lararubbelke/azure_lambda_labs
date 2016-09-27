@@ -1,154 +1,163 @@
-<a name="HOLTop"></a>
-# Intelligent Application #
+# Intelligent Application Module 1 #
 
----
-
-<a name="Overview"></a>
 ## Overview ##
 
-In this module you will build an eCommerce web site for an automotive parts supplier called "Parts Unlimited".
+In this module you will build the Azure backend for an automotive parts supplier called "Parts Unlimited".
+The challenge here is to process millions of events from concurrent users connected from different devices across the globe. With **Azure Event Hubs** or **Azure IoT Hub** you can process large amounts of event data from connected devices and applications. These are managed services that ingest events with elastic scale to accommodate variable load profiles and the spikes caused by intermittent connectivity.
+In this module we are going to be using IoT hubs to ingest our device data.  After you collect data into IoT Hubs, you can store the data using a storage cluster or transform it using a real-time analytics provider. **Azure Stream Analytics** is integrated out-of-the-box with Azure IoT Hubs to ingest millions of events per second. Stream Analytics processes ingested events in real-time, comparing multiple streams or comparing streams with historical values and models. It detects anomalies, transforms incoming data, triggers an alert when a specific error or condition appears in the stream, and displays this real-time data in your dashboard. For this scenario, you will use **Stream Analytics** to process and spool data to Blob Storage and Power BI.
 
-For the web site you will also might want to track the user interactions (such as products views, additions to the cart, etc.) for further analysis. The challenge here is to process millions of events from concurrent users connected from different devices across the globe. With **Azure Event Hubs** or **Azure IoT Hub** you can process large amounts of event data from connected devices and applications. These are managed services that ingest events with elastic scale to accommodate to  variable load profiles and the spikes caused by intermittent connectivity.
-
-After you collect data into IoT Hubs, you can store the data using a storage cluster or transform it using a real-time analytics provider. **Azure Stream Analytics** is integrated out-of-the-box with Azure IoT Hubs to ingest millions of events per second. Stream Analytics processes ingested events in real-time, comparing multiple streams or comparing streams with historical values and models. It detects anomalies, transforms incoming data, triggers an alert when a specific error or condition appears in the stream, and displays this real-time data in your dashboard. For this scenario, you will use **Stream Analytics** to process and spool data to Blob Storage and Power BI.
-
-<a name="Objectives"></a>
 ### Objectives ###
 In this module, you'll:
-
-- Create an **IoT Hub** and integrate it into a Web App
+- Create an **IoT Hub**
+- Register your device with the **IoT Hub**
+- Use a device simulator to generate data
 - Use **Stream Analytics** to process data in near-realtime and spool data to **Blob Storage** and **Power BI**
 - Create a sample **Power BI** dashboard
 
-<a name="Prerequisites"></a>
 ### Prerequisites ###
 
 The following is required to complete this module:
-
 - [Visual Studio Community 2015][1] or greater
 - [ASP.NET Core 1.0][2]
 - [Microsoft Azure Storage Explorer][3] or any other tool to manage Azure Storage
 - [Service Bus Explorer][4]
+- An active Azure subscription
 
 [1]: https://www.visualstudio.com/products/visual-studio-community-vs
 [2]: https://docs.asp.net/en/latest/getting-started/installing-on-windows.html#install-asp-net-5-with-visual-studio
 [3]: http://storageexplorer.com/
 [4]: https://github.com/paolosalvatori/ServiceBusExplorer
 
-
-<a name="Exercises"></a>
 ## Exercises ##
 This module includes the following exercises:
 
-1. [Creating and integrating Event Hubs](#Exercise1)
+1. [Creating and integrating IoT Hubs](#Exercise1)
 1. [Using Stream Analytics to process your data](#Exercise3)
 1. [Visualizing your data with Power BI](#Exercise4)
 
-Estimated time to complete this module: **60 minutes**
+Estimated time to complete this module: **75 minutes**
 
-> **Note:** When you first start Visual Studio, you must select one of the predefined settings collections. Each predefined collection is designed to match a particular development style and determines window layouts, editor behavior, IntelliSense code snippets, and dialog box options. The procedures in this module describe the actions necessary to accomplish a given task in Visual Studio when using the **General Development Settings** collection. If you choose a different settings collection for your development environment, there may be differences in the steps that you should take into account.
-
-> ![General Development Settings](Images/vs-general-development.png?raw=true "General Development Settings")
-
-> _General Development Settings_
-
-
-<a name="Exercise1"></a>
 ### Exercise 1: Creating and integrating IoT Hubs ###
 
 Azure IoT Hubs is an event processing service that provides event and telemetry ingress to the cloud at massive scale, with low latency and high reliability. This service, used with other downstream services, is particularly useful in application instrumentation, user experience or workflow processing, and Internet of Things (IoT) scenarios.
 In this exercise, you will use Azure IoT Hubs to track the user behavior in your retail website when viewing a product and also when adding it to the cart.
 
-<a name="Ex1Task1"></a>
-#### Task 1 - Creating the Event Hub ####
+#### Task 1 - Creating the IoT Hub ####
 
-In this task, you will create the Event Hub that will be used in the following tasks.
+There is a fantastic online resource already written that details exactly how to create your IoT hub and you can find it here [Getting Started](https://azure.microsoft.com/en-gb/documentation/articles/iot-hub-csharp-csharp-getstarted/).  The article then goes on to cover how you can register your device with the IoT Hub using C#.  We have already done this part for you.  From your IoT Hub though you will need to grab a few details and these are;
 
-1. Log on to the [Azure classic portal](https://manage.windowsazure.com/), and click **NEW** at the bottom of the screen.
+- The hub connection string (Settings | Shared access policies | iothubowner
+- The hub host name
 
-1. Click App Services, then **Service Bus**, then **Event Hub**, then **Quick Create**.
+Now we have an IoT hub ready to receive events from our device/s
 
-1. Type a name for your Event Hub, e.g. eventhubdatamodule, select your desired region, and then click **Create a new Event Hub**.
+#### Task 2 - Creating a DocDB account
 
-	![Creating the Event Hub](Images/creating-event-hub.png?raw=true "Creating the Event Hub")
+When you register your device (you will see how to do this in the next section), the application routine returns to you a key from the IoT Hub registry.  You use this key to authenticate yourself against IoT hub along with your device name.  You could retrieve this key from the device registry when you want to send data to the IoT hub but best practice says that you store the key in a durable store.  That durable store in this instance is DocumentDB.
 
-	_Creating the Event Hub_
+To create your first DocumentDB account follow this article [Getting Started](https://azure.microsoft.com/en-gb/documentation/articles/documentdb-create-account/).  Now you need to do two more things
+-  Create a DocumentDB database
+-  Create a DocumentDB collection.  This will hold your IoT hub registration document.
 
-1. Click the namespace you just created (usually _event hub name_-ns).
+Just as we did when creating the IoT Hub we are going to need to collect some details so we can connect to DocumentDB from our C# console application.
 
-1. Click the **Event Hubs** tab at the top of the page, and then click the Event Hub you just created.
+- The DocumentDB Key
+- The Database name
+- The Collection name
+- The DocumentDB account name
 
-1. Click the **Configure** tab at the top, add a new policy named **SendRule** with _Send_ rights, add another policy called **ReceiveRule** with _Manage, Send, Listen_ rights, and then click **Save**.
+OK so now we have an IoT hub and a DocumentDB account setup.  We are almost there for setup now.
 
-	![Creating the shared access policies](Images/creating-event-hub-policies.png?raw=true "Creating the shared access policies")
+#### Task 3 - Create a Storage account ####
 
-	_Creating the shared access policies_
+One of the data repositories for our **Azure Streaming Analytics** jobs is blob storage.  We are going to need to setup and account now.
+You can see exactly how to setup a storage acccount [here](https://azure.microsoft.com/en-gb/documentation/articles/storage-create-storage-account/).  We are going to create a **General Purpose Storage Account**  The article we just mentioned has a good discussion on the differences between the different types of account as well as the difference between hot and cold storage.
+We won't need the details from this storage account until we start to use **Azure Streaming Analaytics**
 
-	We created 2 Shared Access Policies and 2 Shared Access Signatures (or tokens) based off those policies. The signatures will be used to authenticate. If we had a variety of devices, we could create a different token for each device. 
+Now we have things setup we can go ahead and register our device as well as start sending data to our IoT Hub.
 
-1. Click the **Dashboard** tab at the top of the page, and then click **Connection Information**. Notice the tokens are part of the connection strings. Take note of the two connection strings; you'll need them later in this module.
-
-1. Your Event Hub is now created, and you have the connection strings you need to send and receive events.
-
-
-<a name="Ex1Task2"></a>
-#### Task 2 - Configuring and starting event generator application ####
+#### Task 4 - Configuring and starting event generator application ####
 
 In this task, you'll set up and run a console application that will randomly create and send events - such as add, view, checkout and remove - to your Event Hub. Later in this module, you'll visualize these events in Power BI.
 
 1. Open in Visual Studio the **PartsUnlimitedDataGen.sln** solution located at **Source / Ex3 / Begin** folder.
 
-1. Replace the **eventHubName** and  **eventHubConnectionString** values in **Program.cs** with the connection string and name of the **SendRule** from your Event Hub .
+You will notice there are two projects
+
+- CreateDeviceIdentity - this will register your device with the IoTHub and store keys in DocumentDB.
+- PartsUnlimitedDataGen - this is the simulated device.
+
+This is now the point where you alter the app.config file in each project.
+
+Settings for CreateDeviceIdentity
+```xml
+  <appSettings>
+    <add key="hubconnectionstring" value="<hub connection string>" />
+    <add key="docdbkey" value="Your DocDB Key" />
+    <add key="databaseId" value="Your DocDB database" />
+    <add key="collectionId" value="Your DocDB Collection Name" />
+    <add key="docdburi" value="https://<DocDB account>.documents.azure.com:443/" />
+  </appSettings>
+```
+
+
+Settings for PartsUnlimitedDataGen
+```xml
+    <appSettings>
+        <add key="docdburi" value="https://<docdb account>.documents.azure.com:443/" />
+        <add key="docdbkey" value="Your DocDB Key" />
+        <add key="databaseId" value="Your DocDB database" />
+        <add key="collectionId" value="Your DocDB Collection Name" />
+        <add key="hubhostname" value="<IoT Hub account>.azure-devices.net" />
+    </appSettings>
+```
+
 
 1. Build the solution to trigger the download of required NuGet packages.
 
-1. Run the application.
+1. Run the CreateDeviceIdentity application.  If everything is hooked up correctly then you should see your device key on the screen and if you navigate to the DocumentDB collection you just created you should see a document similar to this
+```json
+{
+  "deviceId": "MY_POS_DEVICE1",
+  "generationId": "636031296179141357",
+  "etag": "\"MA==\"",
+  "connectionState": "Disconnected",
+  "status": "enabled",
+  "statusReason": null,
+  "connectionStateUpdatedTime": "0001-01-01T00:00:00",
+  "statusUpdatedTime": "0001-01-01T00:00:00",
+  "lastActivityTime": "0001-01-01T00:00:00",
+  "cloudToDeviceMessageCount": 0,
+  "authentication": {
+    "symmetricKey": {
+      "primaryKey": "8medevHT9l9u+9omMpRiOEx5XHGAkCftjM75nllJfl4=",
+      "secondaryKey": "Ly1xW4NPH5NP9dlsqpLNH6ICwsp/9T62ugZhUI2u0k4="
+    },
+    "x509Thumbprint": {
+      "primaryThumbprint": null,
+      "secondaryThumbprint": null
+    }
+  },
+  "id": "067a945c-6d0e-4484-bf3e-2d34be8b9317"
+}
+```
 
-	![Generating events](Images/events-generator.png?raw=true "Generating events")
+1. Now run the PartsUnlimitedDataGen project.  Again, if everything is hooked up the application should;
+- Go to DocumentDb and retrieve your key
+- Connect to IoT hub and start sending messages
 
-	_Generating events_
 
-<a name="Ex1Task3"></a>
-#### Task 3 - Verifying the website events in IoT Hubs ####
+You should now have events streaming to your IoT Hub.  We have always found it useful to actually look at the events as they land on the IoT hub because even though they may be getting there, they may not be in the format you think they are.  This is where you can use something like Device Explorer.
 
-In this task, you'll verify that the events are being sent to your Event Hub.
+Paste in your IoT Hub Connection String --> Hit **Update** --> Now move to the **Data** tab and push the **monitor** button
 
-1. In the [Azure classic portal](https://manage.windowsazure.com/), go to **Service Bus** and select the one you created before.
+If you wait a couple of seconds you should start to see events flowing through your IoT Hub
 
-1. Click the **CONNECTION INFORMATION** button below and copy the **RootManageSharedAccessKey**; you'll need it to connect via the ServiceBusExplorer in the next step.
-
-	![Getting the service bus RootManageSharedAccessKey](Images/service-bus-connection.png?raw=true "Getting the service bus RootManageSharedAccessKey")
-
-	_Getting the service bus RootManageSharedAccessKey_
-
-1. Run **Service Bus Explorer**.
-
-1. Click **File** -> **Connect**, select _Enter connection string_ from the Service Bus Namespaces list and paste the **RootManageSharedAccessKey** you copied before.
-
-	![Connect to a Service Bus Namespace](Images/service-bus-enter-connection.png?raw=true "Connect to a Service Bus Namespace")
-
-	_Connect to a Service Bus Namespace_
-
-1. Go to **Event Hubs** -> **eventhubdatamodule** -> **Consumer Groups** -> **$Default** -> **Partitions** -> **00** and right click to "Create Partition Listener".
-
-	![Creating a Partition Listener](Images/creating-partition-listener.png?raw=true "Creating a Partition Listener")
-
-	_Creating a Partition Listener_
-
-1. Go to the **Events** tab and click **Start**.
-
-	![Viewing the events list](Images/viewing-events-list.png?raw=true "Viewing the events list")
-
-	_Viewing the events list_
-
-<a name="Exercise2"></a>
-### Exercise 2: Using Stream Analytics to process your data ###
+### Exercise 2: Using Stream Analytics to Analyse your Data ###
 
 Now that we have a stream of events, you'll set up a Stream Analytics job to analyze these events in real-time.
 Azure Stream Analytics (ASA) is a fully managed, cost effective real-time event processing engine that helps to unlock deep insights from data. Stream Analytics makes it easy to set up real-time analytic computations on data streaming from devices, sensors, web sites, social media, applications, infrastructure systems, and more.
 
-
-<a name="Ex2Task1"></a>
 #### Task 1 - Creating Stream Analytics job ####
 
 In this task, you'll set up a Stream Analytics job to analyze the events in real-time.
@@ -159,39 +168,30 @@ Specify the following values, and then click **Create**:
 	- **Job Name**: Enter a job name.
 	- **Region**: Select the region where you want to run the job. Consider placing the job and the event hub in the same region to ensure better performance and to ensure that you won't be paying to transfer data between regions.
 	- **Storage Account**: Choose the Azure storage account that you'd like to use to store monitoring data for all Stream Analytics jobs running within this region. You have the option to choose an existing storage account or to create a new one.
-
-	![Creating Stream Analytics job](Images/new-stream-analytics.png?raw=true "Creating Stream Analytics job")
-
-	_Creating Stream Analytics job_
-
+	
 1. The new job will be shown with a status of Created. Notice that the Start button is disabled. You must configure the job **Input**, **Output**, and **Query** before you can start the job.
 
-<a name="Ex2Task2"></a>
-#### Task 2 - Specifying job Input ####
+#### Task 2 - Specifying Data Stream job Input ####
 
-In this task, you'll specify a job Input using the Event Hub you previously created.
+In this task, you'll specify a job Input using the IoT Hub you previously created.
 
 1. In your Stream Analytics job topology click **Inputs**, and then click **Add**. The blade to create a new Input appears on the right.
 
 1. Type or select the following values for each setting:
 
-	- **Input Alias**: Enter a friendly name for this job input such as CallStream. Note that you'll be using this name in the query later.
+	- **Input Alias**: Enter a friendly name for this job input such as **IoTHubInput**. Note that you'll be using this name in the query later.
 	- **Source Type**: Select Data Stream.
-	- **Source**: Event Hub.
-	- **Service bus namespace**: Use the one you used for the Event Hub you created.
-	- **Event Hub name**: Use the one you created in the previous task.
-	- **Event Hub policy name**: The receive policy name you set in the previous task when creating the Event Hub.
-	- **Event hub policy key**: The key you copied in the previous task when creating the Event Hub.
-	- **Event Serializer Format**: JSON.
+	- **Source**: IoT Hub.
+	- **Subscription**: Use IoT Hub from current subscription
+	- **IoT Hub**: Name of the IoT Hub
+	- **Endpoint**: Messaging (other option is Operations monitoring)
+	- **Shared access policy name**: service
+	- **Consumer group**: $Default
+	- **Event Serialization Format**: JSON.
 	- **Encoding**: UTF8.
-
-	![Creating Stream Analytics Input](Images/new-stream-analytics-input.png?raw=true "Creating Stream Analytics Input")
-
-	_Creating Stream Analytics Input_
 
 1. Click **Create**.
 
-<a name="Ex2Task3"></a>
 #### Task 3 - Specifying job Query ####
 
 Stream Analytics supports a simple, declarative query model for describing transformations for real-time processing. To learn more about the language, see the [Azure Stream Analytics Query Language Reference](https://msdn.microsoft.com/library/dn834998.aspx).
@@ -201,35 +201,33 @@ In this task, you'll create a query that extracts events from your input stream.
 
 1. Add the following to the code editor:
 
-	````
+	```sql
 	SELECT
 	    *
 	INTO
-	    analyticsoutput
+	    RawBlobOutput
 	FROM
-	    CallStream
-	````
+	    IoTHubInput
+	```
 
 1. Click **Save**.
 
 	>**Note:** In this query you're projecting all fields in the payload of the event to the output, you could read some of them of them by using _SELECT [field name]_.
 
-<a name="Ex2Task4"></a>
+
 #### Task 4 - Specifying job Output ####
 
-In this task, you'll create an output that will store the query results in Blob storage.
-
-1. Use an existing storage account or create a new storage account by following these steps: [Create a storage account](https://azure.microsoft.com/documentation/articles/storage-create-storage-account/#create-a-storage-account).
+In this task, you'll create an output that will store the query results in Blob storage.  We created a storage account earlier
 
 1. Create a Container such as eventhubanalytics and set its access to Blob.
 
-	1. Open the **Azure Storage Explorer** or the tool of your preference and configure a new storage account using the account name and key from the previous step. In _Azure Storage Explorer_, right-click on **Storage Accounts**, select **Attach External Storage...** and enter the account name and key in the dialog, then click **OK**.
+	1. Open the **Azure Storage Explorer** or the tool of your preference and configure a new storage account using the account name and key from the storage account you created. In _Azure Storage Explorer_, right-click on **Storage Accounts**, select **Attach External Storage...** and enter the account name and key in the dialog, then click **OK**.
 
 	1. Create a new Blob Container with the name "**eventhubanalytics**" and "Container" access level. In _Azure Storage Explorer_ expand your account and right-click on **Blob Containers**, select **Create Blob Container** and enter "eventhubanalytics". Press enter to create the container. Then right-click on the new container and select **Set Public Access Level..** and choose **Public read access for blobs**.
 
 1. Now, in your Stream Analytics job, click **Outputs** from the main page, and then click **Add**. The options blade requires the following information:
 
-	- **Output alias**: Use the name you set in the previous task, e.g. analyticsoutput
+	- **Output alias**: Set a friendly name to use in the query. We will be using **RawBlobOutput** as our friendly name.
 	- **Sink**: Blob storage.
 	- **Storage account**: Select the name of the storage account.
 	- **Storage account key**: Set the account key.
@@ -240,11 +238,6 @@ In this task, you'll create an output that will store the query results in Blob 
 
 1. Click **Create**.
 
-	![Creating Stream Analytics Output](Images/new-stream-analytics-output.png?raw=true "Creating Stream Analytics Output")
-
-	_Creating Stream Analytics Output_
-
-<a name="Ex2Task5"></a>
 #### Task 5 - Starting the job for real time processing ####
 
 In this task you'll run the Stream Analytics job and view the output in Visual Studio.
@@ -257,27 +250,42 @@ In this task you'll run the Stream Analytics job and view the output in Visual S
 
 1. Navigate to the container you set in the previous task.
 
-	![Browsing container](Images/reviewing-analytics-job.png?raw=true "Browsing container")
 
-	_Browsing container_
 
-1. Open the csv file to see the output.
 
-	![Reviewing Stream Analytics job output](Images/reviewing-analytics-job-output.png?raw=true "Reviewing Analytics job output")
+### Exercise 3: Visualizing your data with Power BI (optional - requires Organizational account ###
 
-	_Reviewing the Stream Analytics job output_
+In this exercise, you'll use Azure Stream Analytics with Microsoft Power BI. You will learn how to build a live dashboard quickly. You will also learn how to perform a JOIN operation in Azure Steam Analytics.
 
-<a name="Exercise3"></a>
-### Exercise 3: Visualizing your data with Power BI ###
 
-In this exercise, you'll use Azure Stream Analytics with Microsoft Power BI. You will learn how to build a live dashboard quickly.
+#### Task 1 - Adding an input for Reference Data ####
+Since our streaming data only contains productId, we need to Join our input stream to our product catalog data in order to get meaningful results. In order to do that, we will first add the product catalog data as a reference dataset to the stream analytics query
 
-<a name="Ex3Task1"></a>
-#### Task 1 - Adding Power BI output to Stream Analytics ####
+1. From the [Azure portal](https://portal.azure.com/), go to Stream Analytics and click the one you created.
+
+1. Click the **STOP** button at the top of the page. We need to stop it in order to add a new input/output.
+
+1. Click **INPUTS** in the middle of the page, and then click **+ Add**.
+
+1. In the **New Input** dialog box, make sure the following options are selected.
+
+	- **Input Alias**: Enter a friendly name for this job input such as **RefData**. Note that you'll be using this name in the query later.
+	- **Source Type**: Select *Reference Data*.
+	- **Source**: Select *Use blob storage from current subscription*.
+	- **Storage Account**: Select the storage account that contains your product catalog file.
+	- **Container**: Select the container that contains your product catalog file.
+	- **path pattern**: Enter the path that contains your product catalog file. 
+	- **Date Format**: Needs to be non-editable
+	- **Time Format**: Needs to be non-editable
+	- **Event Serialization Format**: JSON.
+	- **Encoding**: UTF8.
+
+
+#### Task 2 - Adding Power BI output to Stream Analytics ####
 
 In this task, you'll add a new output to your Stream Analytics job.
 
-1. From the [Azure classic portal](https://manage.windowsazure.com/), go to Stream Analytics and click the one you created.
+1. From the [Azure portal](https://portal.azure.com/), go to Stream Analytics and click the one you created.
 
 1. Click the **STOP** button below. We need to stop it in order to add a new output.
 
@@ -287,38 +295,99 @@ In this task, you'll add a new output to your Stream Analytics job.
 
 1. In the **Add a Microsoft Power BI output**, supply a work or school account for the Stream Analytics job output. If you already have Power BI account, select **Authorize Now**. If not, choose **Sign up now**.
 
-	![Adding Power BI output](Images/adding-powerbi-output.png?raw=true "Adding Power BI output")
-
-	_Adding Power BI output_
-
 1. Next, provide the values for:
 
-	- **Output Alias** – You can put any output alias that is easy for you to refer to. This output alias is particularly helpful if you decide to have multiple outputs for your job. In that case, you have to refer to this output in your query. For example, let’s use the output alias value “OutPowerBI”.
+	- **Output Alias** – You can put any output alias that is easy for you to refer to. This output alias is particularly helpful if you decide to have multiple outputs for your job. In that case, you have to refer to this output in your query. For example, let’s use the output alias value “AbandonedCartsPowerBI”.
 	- **Dataset Name** - Provide a dataset name that you want your Power BI output to have. For example, let’s use “datamodulepbi”.
 	- **Table Name** - Provide a table name under the dataset of your Power BI output. Let’s say we call it “datamodulepbi”. Currently, Power BI output from Stream Analytics jobs may only have one table in a dataset.
 	- **Workspace** - You can use the default, My Workspace.
 
 1. Click **OK, Test Connection** and now your Power BI connection is completed.
 
-1. Lastly, you should update your **Query** to use this output and start the job.
+1. Lastly, you should update your **Query** to use this output and **start** the job.
 
-	````
-	WITH AllEvents AS (
-	SELECT
-	    productId, title, category, type, Count(title) AS [total]
-	FROM
-	    CallStream
-	GROUP BY
-	    productId, title, category, type, TumblingWindow(minute, 10)
+	```sql
+	WITH AbandonedCarts as (
+    SELECT 
+        a.userId, a.productId, a.EventDate 
+    FROM 
+        IoTHubInput as A TIMESTAMP BY EventDate
+    LEFT OUTER JOIN IoTHub as B TimeStamp By EventDate
+    ON a.userId=b.userId AND a.productId = b.productId and b.type='checkout'
+    AND DATEDIFF(minute, A, B) BETWEEN 0 AND 5
+    WHERE a.type = 'add'
+    AND b.type IS NULL
 	)
-	SELECT * INTO OutPowerBI FROM AllEvents
-	SELECT * INTO analyticsoutput FROM CallStream
-	````
+
+	SELECT a.productId, b.title, b.category.name, MIN(a.EventDate) as eventStartTime, count(a.productId)
+	INTO AbandonedCartsPowerBI
+	FROM AbandonedCarts AS a
+	JOIN RefData as B
+	ON a.productId = b.productId
+	GROUP BY a.productId, b.title, b.category.name, TUMBLINGWINDOW(minute, 5)
+
+	SELECT * INTO RawBlobOutput FROM IoTHubInput
+	```
 
 	>**Note:** As we are grouping the results, a window type is required. See [GROUP BY](https://msdn.microsoft.com/library/azure/dn835023.aspx). The query uses a 10-minute tumbling window. The INTO clause tells Stream Analytics which of the outputs to write the data from this statement. The WITH statement is to reuse the results for different statements; in this case we could used it for both outputs but we'll keep storing all fields into the blob.
 
-<a name="Ex3Task2"></a>
-#### Task 2 - Creating the dashboard in Power BI ####
+
+1. (Optional): You can also add another PowerBI Output for tracking the overall activity of your e-commerce store. You can do this by repeating steps 4-7 of **Task 2** and changing the alias and the dataset name. You can use the query below to perform the aggregations. We have used **AllProductsPowerBI** as our PowerBI Output alias.
+
+	```sql
+
+	WITH AllEvents AS (
+	SELECT
+	    productId, type, Count(CAST(productId as String)) AS [total]
+	FROM
+	    IoTHubInput TIMESTAMP BY EventDate
+	GROUP BY
+	    productId, type, TumblingWindow(minute, 5)
+	)
+
+	SELECT a.productId, a.type, b.title, b.category.name, a.total INTO AllProductsPowerBI FROM AllEvents a JOIN RefData as b on a.productId = b.productId
+
+	```
+	
+Overall, your query should look as follows:
+
+	```sql
+
+	WITH AllEvents AS (
+	SELECT
+	    productId, type, Count(CAST(productId as String)) AS [total]
+	FROM
+	    IoTHubInput TIMESTAMP BY EventDate
+	GROUP BY
+	    productId, type, TumblingWindow(minute, 5)
+	),
+	AbandonedCarts as (
+    SELECT 
+        a.userId, a.productId, a.EventDate 
+    FROM 
+        IoTHubInput as A TIMESTAMP BY EventDate
+    LEFT OUTER JOIN IoTHub as B TimeStamp By EventDate
+    ON a.userId=b.userId AND a.productId = b.productId and b.type='checkout'
+    AND DATEDIFF(minute, A, B) BETWEEN 0 AND 5
+    WHERE a.type = 'add'
+    AND b.type IS NULL
+	)
+
+	SELECT a.productId, b.title, b.category.name, MIN(a.EventDate) as eventStartTime, count(a.productId)
+	INTO AbandonedCartsPowerBI
+	FROM AbandonedCarts AS a
+	JOIN RefData as B
+	ON a.productId = b.productId
+	GROUP BY a.productId, b.title, b.category.name, TUMBLINGWINDOW(minute, 5)
+	     
+	SELECT a.productId, a.type, b.title, b.category.name, a.total INTO AllProductsPowerBI FROM AllEvents a JOIN RefData as b
+	on a.productId = b.productId
+	
+	SELECT * INTO RawBlobOutput FROM IoTHubInput TIMESTAMP BY EventDate
+	```
+
+
+#### Task 3 - Creating the dashboard in Power BI ####
 
 1. Go to [PowerBI.com](https://powerbi.microsoft.com/) and login with your work or school account. If the Stream Analytics job query outputs results, you'll see your dataset is already created:
 
@@ -326,9 +395,7 @@ In this task, you'll add a new output to your Stream Analytics job.
 
 1. Now click the dataset created by your Stream Analytics job (“datamodulepbi” in our current example). You will be taken to a page to create a chart on top of this dataset.
 
-	![Power BI Workspace](Images/powerbi-workspace.png?raw=true "Power BI Workspace")
 
-	_Power BI Workspace_
 
 1. Select the **Table visualization** icon from the **Visualizations** menu on the right, then check all fields but productId from the **Fields** list.
 
@@ -340,9 +407,7 @@ In this task, you'll add a new output to your Stream Analytics job.
 
 1. Go to your dashboard, click on the **ellipsis** button at the top-right corner of the tile and click the **pen** button to edit the _Tile details_, select the **Display last refresh time** functionality and apply the changes.
 
-	![Power BI new report](Images/powerbi-dashboard.png?raw=true "Power BI new report")
 
-	_Power BI new report_
 
 1. Go back to the "datamodulepbi" dataset, click the **Funnel** icon from the **Visualization** menu and check _type_ and _total_ from the **Fields** list.
 
@@ -350,18 +415,16 @@ In this task, you'll add a new output to your Stream Analytics job.
 
 1. Lets add it to your dashboard by clicking **Pin Live Page** on the top right, select your dashboard and hit **Pin Live**.
 
-	![Power BI Dashboard](Images/powerbi-my-dashboard.png?raw=true "Power BI Dashboard")
 
-	_Power BI Dashboard_
 
 ---
 
-<a name="Summary"></a>
 ## Summary ##
 
 By completing this module, you should have:
 
-- Created an **Event Hub** and integrated it into a Web App
+- Created an **IoT Hub**
 - Walked through **DocumentDB** integration
 - Used **Stream Analytics** to process data in near-realtime and spool data to **Blob Storage** and **Power BI**
 - Created sample **Power BI** charts & graphs
+
