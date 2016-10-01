@@ -5,6 +5,9 @@
         public string EventDate { get; set; }
         public string UserId { get; set; }
         public string Type { get; set; }
+        public string Title { get; set; }
+
+        public string Category { get; set; }
 
         public int ProductId { get; set; }
 

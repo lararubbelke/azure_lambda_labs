@@ -235,12 +235,13 @@ In this task, you'll create an output that will store the query results in Blob 
 	- **Path pattern**: Type in a file prefix to use when writing blob output. E.g. analyticsoutput-{date}
 	- **Event Serializer Format**: JSON.
 	- **Encoding**: UTF8.
+	- **Format**: Line separated
 
 1. Click **Create**.
 
 #### Task 5 - Starting the job for real time processing ####
 
-In this task you'll run the Stream Analytics job and view the output in Visual Studio.
+In this task you'll run the Stream Analytics job and view the output in Storage explorer.
 
 1. From the job **Dashboard**, click the **Start** button.
 
@@ -253,13 +254,15 @@ In this task you'll run the Stream Analytics job and view the output in Visual S
 
 
 
-### Exercise 3: Visualizing your data with Power BI (optional - requires Organizational account ###
+### Exercise 3: Visualizing your data with Power BI (optional - requires Organizational account) ###
 
-In this exercise, you'll use Azure Stream Analytics with Microsoft Power BI. You will learn how to build a live dashboard quickly. You will also learn how to perform a JOIN operation in Azure Steam Analytics.
+In this exercise, you will use Azure Stream Analytics with Microsoft Power BI. You will learn how to build a live dashboard quickly. You will also learn how to perform a JOIN operation in Azure Steam Analytics.
 
 
 #### Task 1 - Adding an input for Reference Data ####
 Since our streaming data only contains productId, we need to Join our input stream to our product catalog data in order to get meaningful results. In order to do that, we will first add the product catalog data as a reference dataset to the stream analytics query
+
+Use the storage explorer and create another container in the storage account. Name this container **productcatalog**. Then upload the **productcatalog.json** in the container. You will find this file in the **Assets** folder of Module 1.
 
 1. From the [Azure portal](https://portal.azure.com/), go to Stream Analytics and click the one you created.
 
@@ -273,8 +276,8 @@ Since our streaming data only contains productId, we need to Join our input stre
 	- **Source Type**: Select *Reference Data*.
 	- **Source**: Select *Use blob storage from current subscription*.
 	- **Storage Account**: Select the storage account that contains your product catalog file.
-	- **Container**: Select the container that contains your product catalog file.
-	- **path pattern**: Enter the path that contains your product catalog file. 
+	- **Container**: Select the container that contains your product catalog file (productcatalog).
+	- **path pattern**: Enter the path that contains your product catalog file. **productcatalog.json**
 	- **Date Format**: Needs to be non-editable
 	- **Time Format**: Needs to be non-editable
 	- **Event Serialization Format**: JSON.
@@ -326,7 +329,7 @@ In this task, you'll add a new output to your Stream Analytics job.
 	ON a.productId = b.productId
 	GROUP BY a.productId, b.title, b.category.name, TUMBLINGWINDOW(minute, 5)
 
-	SELECT * INTO RawBlobOutput FROM IoTHubInput
+	SELECT * INTO RawBlobOutput FROM IoTHubInput TIMESTAMP BY EventDate
 	```
 
 	>**Note:** As we are grouping the results, a window type is required. See [GROUP BY](https://msdn.microsoft.com/library/azure/dn835023.aspx). The query uses a 10-minute tumbling window. The INTO clause tells Stream Analytics which of the outputs to write the data from this statement. The WITH statement is to reuse the results for different statements; in this case we could used it for both outputs but we'll keep storing all fields into the blob.
@@ -366,7 +369,7 @@ Overall, your query should look as follows:
         a.userId, a.productId, a.EventDate 
     FROM 
         IoTHubInput as A TIMESTAMP BY EventDate
-    LEFT OUTER JOIN IoTHub as B TimeStamp By EventDate
+    LEFT OUTER JOIN IoTHubInput as B TimeStamp By EventDate
     ON a.userId=b.userId AND a.productId = b.productId and b.type='checkout'
     AND DATEDIFF(minute, A, B) BETWEEN 0 AND 5
     WHERE a.type = 'add'
@@ -399,7 +402,7 @@ Overall, your query should look as follows:
 
 1. Select the **Table visualization** icon from the **Visualizations** menu on the right, then check all fields but productId from the **Fields** list.
 
-1. Within the **Filters** section, click **category** Advanced filtering and select the option to show items when the value _is not blank_.
+1. Within the **Filters** section, click **name** Advanced filtering and select the option to show items when the value _is not blank_.
 
 1. Apply the filter and click **Save** on the top right. You can name it "Events report".
 
@@ -409,7 +412,7 @@ Overall, your query should look as follows:
 
 
 
-1. Go back to the "datamodulepbi" dataset, click the **Funnel** icon from the **Visualization** menu and check _type_ and _total_ from the **Fields** list.
+1. Go back to the "allproducts" dataset, click the **Funnel** icon from the **Visualization** menu and check _type_ and _total_ from the **Fields** list.
 
 1. Click **Save** on the top right, enter a name like Events Summary and save it.
 

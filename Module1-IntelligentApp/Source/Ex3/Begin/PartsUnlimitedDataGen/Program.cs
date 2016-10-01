@@ -117,7 +117,7 @@
 
                 var eventMessage = new EventMessage
                 {
-                    EventDate = DateTime.Now.ToString("yyyyMMdd"),
+                    EventDate = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                     Type = randomEventType,
                     ProductId = randomProduct.ProductId,
                     Title = randomProduct.Title,
