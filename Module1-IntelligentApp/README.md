@@ -412,7 +412,7 @@ Overall, your query should look as follows:
 
 
 
-1. Go back to the "allproducts" dataset, click the **Funnel** icon from the **Visualization** menu and check _type_ and _total_ from the **Fields** list.
+1. Go to the "allproducts" dataset, click the **Funnel** icon from the **Visualization** menu and check _type_ and _total_ from the **Fields** list.
 
 1. Click **Save** on the top right, enter a name like Events Summary and save it.
 
