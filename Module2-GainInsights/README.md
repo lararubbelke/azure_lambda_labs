@@ -8,7 +8,7 @@
 
 Azure Data Factory is a cloud-based data integration service that orchestrates and automates the movement and transformation of data. It works across on-premises and cloud data sources and SaaS to ingest, prepare, transform, analyze, and publish your data.
 
-Transformation activities in Azure Data Factory transform and process your raw data into predictions and insights. The transformation activity executes in a computing environment such as Azure HDInsight cluster or an Azure Batch. You will create an HDInsight Hive activity to execute a Hive query.
+Transformation activities in Azure Data Factory transform and process your raw data into predictions and insights. The transformation activity executes in a computing environment such as Azure HDInsight cluster or an Azure Batch. You will create an Azure HDInsight Hive activity to execute a Hive query.
 
 Azure SQL Data Warehouse is an enterprise-class, distributed database capable of processing massive volumes of relational and non-relational data. It's the industry's first cloud data warehouse that combines proven SQL capabilities with the ability to grow, shrink, and pause in seconds. SQL Data Warehouse is also deeply ingrained into Azure, and you'll use Data Factory to move generated statistics into SQL Data Warehouse and visualize it in Power BI.
 
@@ -31,17 +31,29 @@ The following is required to complete this module:
 
 - [Microsoft Visual Studio Community 2015][1] or greater
 - [Microsoft Azure Storage Explorer][2] or any other tool to manage Azure Storage
-- [Microsoft Azure PowerShell][3] (1.0 or above) 
+- [Microsoft Azure PowerShell][3] (1.0 or above) OR [Azure CLI][4] (You will need NodeJS installed on your machine in order to use Azure CLI)
+- Putty or any other ssh tool
 
 [1]: https://www.visualstudio.com/products/visual-studio-community-vs
 [2]: http://storageexplorer.com/
 [3]: https://azure.microsoft.com/en-us/documentation/articles/powershell-install-configure/
+[4]: https://azure.microsoft.com/en-us/documentation/articles/xplat-cli-install/
+
 
 <a name="Setup"></a>
 ### Setup ###
-In order to run the exercises in this module, you'll need to create an HDI cluster, a SQL Data Warehouse, a storage account and upload some asset files. 
+In order to run the exercises in this module, you'll need to create an HDI cluster, a SQL Data Warehouse, a storage account and upload some asset files. You can either follow the Auto Setup or the Manual Setup steps listed below. If this is the first time you're working with these services, we highly recommend you go through the Manual Setup process.  
 
 > **Important:** when entering the names for the storage account, SQL DW server and HDInsight server, those must be **globally unique**. To ensure this, you can use your first and last name as prefixes for the resource names. For instance: "johndoestorage", "johndoehdi" and "johndoesqlserver".
+
+<a name="AutoSetup"> </a>
+#### Auto Setup #####
+Navigate to the Setup Folder under 'Module 2'. You will find a folder called as Initial Setup. If you are using Azure Powershell, go into the folder named 'ps'. If you're using the Azure CLI, navigate to the 'cli' folder. Now, execute the **setup** file.
+
+You will be prompted for the following information:
+
+1. Login credentials for Microsoft Azure
+1. Resource Group Name you'd like to use for the lab 
 
 <a name="ManualSetupUploadFiles"></a>
 #### Manual Setup 1: Manually uploading the sample files ####
@@ -53,26 +65,19 @@ In this section you will create a new storage account, and load sample data that
 	1. Update the $dwdataFolder variable with the local path where you stored the sample log files for the ADW lab.  
 	1. Save the changes.
 1. Execute the PowerShell script.  
-1. When prompted, input a globally unique name for the Resource Group.
+1. When prompted, input a globally unique name for the Resource Group. Remember the name of the resoruce group, you will use this same resource group when creating the HDI cluster, SQL Data Warehouse and Data Factory.
 1. When prompted, input a globally unique name for the Storage Account.
 
 1. In the [Microsoft Azure portal](https://portal.azure.com/), create a new Storage Account.
- 1. Navigate New > Data + Storage > Storage Account. 
  1. Provide a globally unique name for the new storage account. 
  1. Select "_Resource Manager_" for the deployment model.
  1. Select the "_Standard Locally Redundant_" (Standard-LRS) storage account type.  
 	 	>**Note:** Under normal circumstances, you may choose to replicate across regions to support recovery scenarios.  This lab will not require geo-redundency. 
 
- 1. Create a new _Resource Group_ with a globally unique name.  You will use this same resource group when creating the HDI cluster, SQL Data Warehouse and Data Factory.
- 1. Select a location.  You will use this same location for the other services.
- 1. Select Pin to Dashboard so you can easily access the storage account in future exercises. 
- 1. Click **Create**.  The deployment will complete in about 1-3 minutes. 
-
-	![New storage account](Images/setup-new-storage.png?raw=true "New storage account")
-
-	_New storage account_
-
-1. When the storage account has been provisioned, select Access Keys from the Settings blade to copy the storage account key.  
+1. When the storage account has been provisioned and the files are uploaded, open the [Microsoft Azure portal](https://portal.azure.com/) to copy the storage account access key.
+	1. Navigate to All Resources and type the name of your storage account in the Filter items box.  
+	1. Click on the storage account.
+	1. Select Access Keys from the Settings blade to copy the storage account key.  
 	> **Note:** You will use the storage key in several steps during this lab. **Copy this to a text file and save in a readily accessible location (ie Desktop).**
 
 	![Getting account name and key](Images/setup-storage-key.png?raw=true "Getting account name and key")
@@ -80,7 +85,7 @@ In this section you will create a new storage account, and load sample data that
 	_Getting account name and key_
 
 
-1. Use **Azure Storage Explorer** or the tool of your preference to connect to the new storage account using the account name and key from the previous step. 
+1. Open **Azure Storage Explorer** or the tool of your preference to connect to the new storage account using the account name and key from the previous step. 
 	1. On the left pane of _Azure Storage Explorer_, right-click on **Storage Accounts** and select **Connect to Azure Storage...** 
 	1. Enter the account name and key in the dialog, then click **OK**.
 
@@ -94,24 +99,8 @@ In this section you will create a new storage account, and load sample data that
 
 	> _Add an Account_
 
-1. Create three new Blob Containers with "Container" access level. 
-	1. In _Azure Storage Explorer_ expand your account and right-click on **Blob Containers**, select **Create Blob Container** and enter **partsunlimited**. Press enter to create the container. 
-	1. Right-click on the new container and select **Set Public Access Level..** and choose **Public read access for container and blobs**.
-	1. Repeat steps 1-2 to create another Blob Container with the name "**processeddata**".  This container will be used to store the result from the HDI processing and ADF workflow.
-	1. Repeat steps 1-2 to create another Blob Container with the name "**dwdata**".  This container will be used to store sample logs for the SQL Data Warehouse introduction lab.
-
-1. Upload the **logs** folder and subfolders (in _Setup\Assets\HDInsight_) to the **partsunlimited** container.
-	1. Right-click on the **partsunlimited** container and select **Open Blob Container Editor**.
-	1. Click **Upload** and choose **Upload folder**. 
-	1. In the _Upload folder_ dialog, select the **logs** folder from _Setup\Assets\HDInsight_ and then click **Upload**.
-	1. Repeat the previous steps to upload the **Scripts** folder (from _Setup\Assets\HDInsight_) to the partsunlimited container.
-
-1. Upload the **processedlogs** folder (in _Setup\Assets\ADW_) to the **dwdata** container.
-	1. Right-click on the **dwdata** container and select **Open Blob Container Editor**.
-	1. Click **Upload** and choose **Upload folder**. 
-	1. In the _Upload folder_ dialog, select the **processedlogs** folder (from _Setup\Assets\ADW_) and then click **Upload**.
-
-> **Note:** Alternatively, you could use the [Blob Service REST API](https://msdn.microsoft.com/en-us/library/azure/dd135733.aspx) to automate the files upload.
+1. Verify the three new Blob Containers exist. 
+	1. In _Azure Storage Explorer_ expand your account and expand **Blob Containers** to verify containers with the name **partsunlimited**, **processeddata**, and "**dwdata**"
 
 You should now have sample data and a new storage account with three blob containers. 
 
@@ -137,7 +126,7 @@ You should now have sample data and a new storage account with three blob contai
 		- **Storm**: for real time event processing workloads
 		- **Spark**: for in-memory processing, interactive queries, stream, and machines learning workloads.
 
-	1. Select an _operating system_ for the cluster (you can choose between either Windows or Linux).
+	1. Select **linux** as the _operating system_ for the cluster (you can choose between either Windows or Linux).
 
 	1. Select **the latest version** ("Hadoop 2.7.1 (HDI 3.4)" or latest) from the Version drop-down.
 
@@ -289,59 +278,17 @@ Estimated time to complete this module: **60 minutes**
 
 **Apache Hive** is a data warehouse system for Hadoop, which enables data summarization, querying, and analysis of data by using **HiveQL** (a query language similar to SQL). Hive can be used to interactively explore your data or to create reusable batch processing jobs.
 
-In this exercise, you'll create a **Hive activity** using HQL script code to generate the output data in the Azure Storage linked service.
+This exercise is meant to be an extension of Module 1. We will be using the data that was spooled by Azure Stream Analytics to Azure Blob Storage to perform our queries. However, to maintain the modularity 
+In this exercise, you'll create a **Hive activity** using HQL script code to generate the output data in the Azure Storage.
 
 <a name="Ex1Task1"></a>
 #### Task 1 - Writing a Hive query to analyze the logs ####
 
 In this task, you'll write a Hive query to generate product stats (views and cart additions) from the Parts Unlimited logs.
 
-1. Navigate to the HDInsight server dashboard: https://**{hdiclustername}**.azurehdinsight.net/. If the HDI server was created with _Linux_ the **Ambari** portal will be loaded.
+1. Navigate to the HDInsight server dashboard and click on the URL: https://**{clusterName}**.azurehdinsight.net/
 
-1. Log in using the username 'admin' and the password you entered when you created the cluster.
-
-1. If the HDI cluster was created using **Hadoop on Windows** (default when using Setup scripts), follow these steps:
-
-	1. Open the **Hive Editor** using the link in the top bar if the HDI cluster is running _Windows_. 
-
-	1. Write HQL code to create a partitioned table for the existing blobs and then parse the JSON format. Paste the snippet below, replace the **<****StorageAccountName****>** and update the partition to be of a valid date and location (where the input logs were uploaded according to the current date):
-
-		````SQL
-		DROP TABLE IF EXISTS LogsRaw;
-		CREATE EXTERNAL TABLE LogsRaw (jsonentry string) 
-		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/03/30";
-
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=03, day=30) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/03/30';
-
-		SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT),
-				 get_json_object(jsonentry, "$.title"),
-				 get_json_object(jsonentry, "$.category"),
-				 get_json_object(jsonentry, "$.type"),
-				 CAST(get_json_object(jsonentry, "$.totalClicked") as BIGINT)
-		FROM LogsRaw;
-		````
-
-		> **Note**: The CREATE EXTERNAL TABLE command that we used here, creates an external table, the data file can be located outside the default container and does not move the data file.
-
-		![Hive editor](Images/ex2task1-hive-editor.png?raw=true "Hive editor")
-
-		_Hive editor_
-
-	1. Enter a name, e.g. "**Product Stats**", for the query and click **Submit** to create a job session for the query execution.
-
-	1. Notice the new entry in the **Job Session** table and the status. It will say Initializing and then, Running.
-
-		![Job session state](Images/ex2task1-job-session.png?raw=true "Job session state")
-
-		_Job session state_
-
-	1. Wait for the status to be Completed, click the query name to view the details. Notice the **Job Output** with the resulting values.
-
-		![Query output](Images/ex2task1-query-output.png?raw=true "Query output")
-
-		_Query output_
-
-1. If the HDI cluster was created using **Hadoop on Linux**, follow these steps:
+1. You will be directed to the Ambari portal. Once there, follow the steps below:
 
 	1. Select the **Hive view** in the views button at the top bar.
 
@@ -349,27 +296,17 @@ In this task, you'll write a Hive query to generate product stats (views and car
 
 		_Hive view option in Ambari_
 
-	1. In the new worksheet, write HQL code to create a partitioned table for the existing blobs and then parse the JSON format. Paste the snippet below, replace  **<****StorageAccountName****>** and update the partition to be of a valid date and location (where the input logs were uploaded according to the current date):
+	1. In the new worksheet, write HQL code to create a partitioned table for the existing blobs and then parse the JSON format. Paste the snippet below, replace  **<****StorageAccountName****>** and update the partition to be of a valid **date** and **location** (where the input logs were uploaded according to the current date):
 
 		````SQL
-		DROP TABLE IF EXISTS LogsRaw;
-		CREATE EXTERNAL TABLE LogsRaw (jsonentry string) 
+		CREATE EXTERNAL TABLE IF NOT EXISTS LogsRaw (jsonentry string) 
 		PARTITIONED BY (year INT, month INT, day INT)
-		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<Azure Storage Account Name>.blob.core.windows.net/logs/";
+		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/"
 
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=03) LOCATION 'wasb://partsunlimited@<Azure Storage Account Name>.blob.core.windows.net/logs/2016/07/03';
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=04) LOCATION 'wasb://partsunlimited@<Azure Storage Account Name>.blob.core.windows.net/logs/2016/07/04';
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=05) LOCATION 'wasb://partsunlimited@<Azure Storage Account Name>.blob.core.windows.net/logs/2016/07/05';
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=07, day=06) LOCATION 'wasb://partsunlimited@<Azure Storage Account Name>.blob.core.windows.net/logs/2016/07/06';
-
-
-		SELECT CAST(get_json_object(jsonentry, "$.productid") as BIGINT),
-				 get_json_object(jsonentry, "$.title"),
-				 get_json_object(jsonentry, "$.category"),
-				 get_json_object(jsonentry, "$.type"),
-				 CAST(get_json_object(jsonentry, "$.total") as BIGINT),
-		 		 CAST(get_json_object(jsonentry, "$.logdate") as int) 
-		FROM LogsRaw;
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=<year>, month=<month>, day=<firstDay>) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/<year>/<month>/<firstDay>';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=<year>, month=<month>, day=<secondDay>) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/<year>/<month>/<secondDay>';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=<year>, month=<month>, day=<thirdDay>) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/<year>/<month>/<thirdDay>';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=<year>, month=<month>, day=<fourthDay>) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/<year>/<month>/<fourthDay>';
 		````
 
 		> **Note**: The CREATE EXTERNAL TABLE command that we used here, creates an external table, the data file can be located outside the default container and does not move the data file.
@@ -386,43 +323,42 @@ In this task, you'll write a Hive query to generate product stats (views and car
 
 		_Query output_
 
-	> **Note:** Ambari portal offers many features over the Windows dashboard. You can create advanced visualization of the data results using charts, customize the Hive settings, create customized views, among many other options. To learn more about Ambari portal go to [Manage HDInsight clusters by using the Ambari Web UI](https://azure.microsoft.com/documentation/articles/hdinsight-hadoop-manage-ambari/).
+	> **Note:** Ambari portal offers many features. You can create advanced visualization of the data results using charts, customize the Hive settings, create customized views, among many other options. To learn more about Ambari portal go to [Manage HDInsight clusters by using the Ambari Web UI](https://azure.microsoft.com/documentation/articles/hdinsight-hadoop-manage-ambari/).
 
-1. Write a new Hive query to create the output table using a columns schema matching the output of the previous query. Paste the snippet below and replace the **StorageAccountName** placeholder.
+1. Write a new Hive query to create the output partitioned table using a columns schema matching the output of the previous query. Paste the snippet below and replace the **StorageAccountName** placeholder.
 
 	````SQL
-	DROP TABLE IF EXISTS OutputTable;
-	CREATE EXTERNAL TABLE OutputTable (
-		logdate int,
-		productid int,
-		title string,
-		category string,
+	CREATE EXTERNAL TABLE IF NOT EXISTS websiteActivity (
+		eventdate string,
+		userid string,
 		type string,
-		totalclicked int
-	) 
-	ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
-	STORED AS TEXTFILE LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/logs';
+		productid string,
+		quantity int,
+		price double
+	) PARTITIONED BY (year int, month int, day int) 
+	ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' LINES TERMINATED BY '\n'
+	STORED AS TEXTFILE LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/structuredlogs';
 	````
 
 1. **Submit** or **execute** the Hive query to create the output table.
 
 <a name="Ex1Task2"></a>
-#### Task 2 - Create the HQL script for the ADF Hive Activity ####
+#### Task 2 - Create the HQL for your data ####
 
-In this task, you'll review and set up the scripts that will be used in the Azure Data Factory lab.
+In this task, we'll create our hive scripts to process out data. This is used to demonstrate the ability of Hadoop to parse nested JSONs easily.
 
-1. Open the file located in **Setup\Assets\HDInsight\Scripts\logstocsv.hql** and review its content:
+1. Open the file located in **Setup\Assets\HDInsight\Scripts\structuredlogs.hql** and review its content:
 
 	````SQL
-	INSERT OVERWRITE TABLE OutputTable 
-	SELECT 
-		CAST(get_json_object(jsonentry, "$.productid") as BIGINT) as productid,
-		get_json_object(jsonentry, "$.title") as title,
-		get_json_object(jsonentry, "$.category") as category,
-		get_json_object(jsonentry, "$.type") as prodtype,
-		CAST(get_json_object(jsonentry, "$.total") as BIGINT) as totalClicked,
-		CAST(get_json_object(jsonentry, "$.logdate") as int) as logdate
+	INSERT OVERWRITE TABLE websiteActivity Partition (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day})
+	SELECT CAST(CONCAT(split(get_json_object(jsonentry, "$.eventDate"),'T')[0], ' ', SUBSTRING(split(get_json_object(jsonentry, "$.eventDate"),'T')[1],0,LENGTH(split(get_json_object(jsonentry, "$.eventDate"),'T')[1])-1)) as TIMESTAMP) as eventdate,
+		 get_json_object(jsonentry, "$.userId") as userid,
+         get_json_object(jsonentry, "$.type") as type,
+         get_json_object(jsonentry, "$.productId") as productid,
+		 CAST(get_json_object(jsonentry, "$.quantity") as int) as quantity,
+         CAST(get_json_object(jsonentry, "$.price") as DOUBLE) as price
 	FROM LogsRaw
+	WHERE year=${hiveconf:Year} and month=${hiveconf:Month} and day=${hiveconf:Day};
 	````
 
     Notice this script is, essentially, the Hive query you wrote and tested in the previous task but it insert the results in the output table.
@@ -430,19 +366,110 @@ In this task, you'll review and set up the scripts that will be used in the Azur
 1. Open the file located in **Setup\Assets\HDInsight\Scripts\addpartitions.hql** and review its content:
 
 	````SQL
+
 	ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day}) LOCATION 'wasb://partsunlimited@${hiveconf:StorageAccountName}.blob.core.windows.net/logs/${hiveconf:Year}/${hiveconf:Month}/${hiveconf:Day}';
 
+	ALTER TABLE websiteActivity ADD IF NOT EXISTS PARTITION (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day}) LOCATION 'wasb://processeddata@${hiveconf:StorageAccountName}.blob.core.windows.net/structuredlogs/${hiveconf:Year}/${hiveconf:Month}/${hiveconf:Day}';
 	````
 
     This script adds the partitiones by date to the input and output tables. The storage account name and all the required date components for the partitiones will be passed as parameters by the Hive action running in the Data Factory.
 
+
+1. Open the file located in **Setup\Assets\HDInsight\Scripts\productcatalog.hql** and review its content:
+
+	````SQL
+	DROP TABLE IF EXISTS RawProductCatalog;
+	CREATE EXTERNAL TABLE RawProductCatalog (
+		jsonentry string
+	) STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/productcatalog/"
+	
+
+	DROP TABLE IF EXISTS ProductCatalog;
+	CREATE TABLE ProductCatalog ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
+	LOCATION 'wasbs://processeddata@<Azure storage account name>.blob.core.windows.net/product_catalog/'
+	AS SELECT get_json_object(jsonentry, "$.skuNumber") as skuNumber,
+			  get_json_object(jsonentry, "$.id") as id,
+			  get_json_object(jsonentry, "$.productId") as productId,
+			  get_json_object(jsonentry, "$.categoryId") as categoryId,
+			  get_json_object(jsonentry, "$.category.name") as categoryName,
+			  get_json_object(jsonentry, "$.title") as title,
+			  get_json_object(jsonentry, "$.price") as price,
+			  get_json_object(jsonentry, "$.salePrice") as salePrice,
+			  get_json_object(jsonentry, "$.costPrice") as costPrice,
+			  get_json_object(jsonentry, "$.productArtUrl") as productArtUrl,
+			  get_json_object(jsonentry, "$.description") as description,
+			  get_json_object(jsonentry, "$.productDetails") as productDetails
+	FROM RawProductCatalog;
+	````
+
+
+<a name="Ex1Task3"></a>
+#### Task 3 (Optional) - Create the HQL script to process the raw data ####
+1. First, let's start by getting used to the simple HiveQL language. Let's run a query to compute the top-selling products for the day.
+
+	````SQL
+	SELECT productid, SUM(quantity)
+	FROM websiteActivity
+	WHERE eventdate = from_unixtime(unix_timestamp())
+	GROUP BY productid;
+	````
+
+1. We can see how easy it is to run a SQL-like query using HiveQL. We can easily join this data to the product catalog data and understand our top selling categories as well. The HiveQL query below does exactly that.
+
+	````SQL
+	SELECT a.productid, b.title, b.categoryName, SUM(a.quantity)
+	FROM websiteActivity a LEFT OUTER JOIN RawProductCatalog b
+	ON a.productid = b.productid
+	WHERE eventdate = from_unixtime(unix_timestamp())
+	GROUP BY productid;
+	````
+
+1. Next, we'll be processing some data using HiveQL. In this scenario, we will process our log data and understand which products get bought together. This will help us understand our audience a little better and come up with better marketing strategies for our e-commerce store. This is used to highlight the ease and ability of a NoSQL ETL engine like Hadoop to work with Arrays within tabular formatted data.
+
+The code can be found in **Setup\Assets\HDInsight\Scripts\relatedproducts.hql**
+
+	````SQL
+	DROP VIEW IF EXISTS unique_purchases;
+	CREATE VIEW unique_products AS 
+	SELECT distinct userid, productid
+	FROM websiteActivity where eventdate > date_sub(from_unixtime(unix_timestamp()),30)
+	AND type = 'checkout';
+
+	DROP VIEW IF EXISTS all_purchased_products;
+	CREATE VIEW all_purchased_products AS 
+	SELECT a.userid, COLLECT_LIST(a.productid,'\;',a.qty) as product_list from
+	(SELECT userid, productid, sum(quantity) as qty websiteActivity
+	WHERE where eventdate > date_sub(from_unixtime(unix_timestamp()),30)
+	AND type = 'checkout'
+	ORDER BY userid ASC, qty DESC) a;
+
+	DROP VIEW IF EXISTS related_purchase_list;
+	CREATE VIEW related_purchases AS
+	SELECT a.userid, a.productid, b.product_list
+	FROM unique_purchases a LEFT OUTER JOIN all_purchased_products b ON (a.userid = b.userid);
+
+	DROP TABLE IF EXISTS related_purchases;
+	CREATE TABLE related_purchases ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' LOCATION 'wasbs://processeddata@<Azure storage account name>.blob.core.windows.net/related_purchases/' AS 
+	SELECT a.productid, a.related_product, a.quantity, rank() OVER (PARTITION BY a.productid ORDER BY a.quantity DESC) as rank FROM
+	(SELECT productid, SPLIT(product_list, '\;')[0] as related_product, CAST(SPLIT(product_list, '\;')[1] as INT) as quantity
+	FROM related_purchase_list LATERAL VIEW EXPLODE(product_list) prodList as product_list) a
+	WHERE a.productid <> a.related_product
+	GROUP BY a.productid
+	ORDER BY productid ASC, rank DESC;
+	````
+
+1. Now that we have the related purchases, we can use this information to power recommendations on our e-commerce website. We can move the output of this table to a transactional data store, where our web app can pick up the latest data to power the recommendations.
+
+
 1. These scripts were already uploaded to your storage during the module setup by using the manual steps or the **Setup.cmd** script. Verify the HQL script was uploaded by using the **Azure Storage Explorer** to navigate to the **Scripts** folder in the **partsunlimited** container.
 
-	1. In the left pane navigate to the **partsunlimited** container, open the **Scripts** folder and verify the **logstocsv.hql** file is present.
+	1. In the left pane navigate to the **partsunlimited** container, open the **Scripts** folder and verify the files are present.
 
 		![Verify HQL script file is in place](Images/ex2task2-explorer-scripts.png?raw=true "Verify HQL script file is in place")
 
 		_Verify HQL script file is in place_
+
+
 
 <a name="Exercise2"></a>
 ### Exercise 2: Loading and querying data in Azure SQL Data Warehouse ###
@@ -495,7 +522,7 @@ All scripts for this exercise are available in the folder Module2-GainInsights\S
 	CREATE EXTERNAL DATA SOURCE AzureStorage
 	WITH (
 	    TYPE = HADOOP,
-	    LOCATION = 'wasbs://dwdata@<Azure storage account name>.blob.core.windows.net',
+	    LOCATION = 'wasbs://processeddata@<Azure storage account name>.blob.core.windows.net',
 	    CREDENTIAL = AzureStorageCredential
 	);
 	````
@@ -524,38 +551,62 @@ Now let's create the external tables. All we are doing here is defining column n
 	````
 
 1. Open a query window and execute the following SQL to create the external table.  Notice the WITH clause is using the data source and file format created in the previous task.
-
 	````SQL
-	CREATE EXTERNAL TABLE asb.ProductLogExternal
+	CREATE EXTERNAL TABLE asb.WebisteActivityExternal
 	(
-		LogDate int,
-		ProductID int, 
-		Title nvarchar(50), 
-		Category nvarchar(50), 
-		ProdType nvarchar(10), 
-		TotalClicked int
+		EventDate int,
+		UserID nvarchar(20),
+		Type nvarchar(20),
+		ProductID nvarchar(20), 
+		Quantity int, 
+		Price decimal
 	)
 	WITH (
-	    LOCATION='/processedlogs/2016/07/',
+	    LOCATION='/structuredlogs/2016/07/',
 	    DATA_SOURCE=AzureStorage,
 	    FILE_FORMAT=TextFile
 	);
 	````
-1. After the external table has been created, run a couple of queries on the table.  Notice how you query the external table as you would any other table in the database.
+
+1. Let's create another table to load the Product Catalog into SQL DW so that we can perform some meaningful analytics like understanding our most profitable products the last 30 days, so that we can promote them further.
+
+	CREATE EXTERNAL TABLE asb.ProductCatalogExternal
+	(
+		SkuNumber nvarchar(50),
+		Id int,
+		ProductID nvcarchar(20),
+		CategoryID nvcarchar(20),
+		CategoryName nvarchar(100),
+		Title nvcarchar(100),
+		Price decimal,
+		SalePrice decimal,
+		CostPrice decimal,
+		ProductArtUrl nvcarchar(max),
+		Description nvcarchar(max),
+		ProductDetails nvcarchar(max)
+	)
+	WITH (
+	    LOCATION='/product_catalog/',
+	    DATA_SOURCE=AzureStorage,
+	    FILE_FORMAT=TextFile
+	);
+	````
+
+1. Now that the external table has been created, let's run a couple of sample queries to get used to the SQL DW environment. Notice how you query the external table as you would any other table in the database.
 
 	````SQL
-	SELECT COUNT(*) FROM asb.ProductLogExternal;
+	SELECT COUNT(*) FROM asb.WebsiteActivityExternal;
 
 	SELECT
-		LogDate,
-		Category,
-		Title,
-		SUM(CASE WHEN prodtype = 'view' THEN totalClicked ELSE 0 END) AS ProdViews,
-		SUM(CASE WHEN prodtype = 'add' THEN totalClicked ELSE 0 END) AS ProdAdds
-	FROM asb.ProductLogExternal 
-	GROUP BY LogDate, Title, Category;
-
+		ProductID,
+		SUM(CASE WHEN Type = 'view' THEN Quantity ELSE 0 END) AS ProdViews,
+		SUM(CASE WHEN Type = 'add' THEN Quantity ELSE 0 END) AS ProdAdds,
+		SUM(CASE WHEN Type = 'checkout' THEN Quantity ELSE 0 END) AS ProdBuys
+	FROM asb.WebsiteActivityExternal
+	WHERE 
+	GROUP BY ProductID;
 	````
+
 
 <a name="Ex2Task4"></a>
 #### Task 4 - Loading Data with CTAS ####
@@ -573,71 +624,106 @@ The easiest and most efficient way to load data from Azure blob storage is to us
 
 1. Execute the following in a query window to create a new partitioned table.  Note this table will be created based on a SELECT statement issued on the external table. 
 
-	````SQL	
-	CREATE TABLE adw.FactProductLog
+	````SQL
+	IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'adw' AND TABLE_NAME = 'FactWebsiteActivity')
+	CREATE TABLE adw.FactWebsiteActivity
 	WITH (
 		CLUSTERED COLUMNSTORE INDEX,
 		DISTRIBUTION = HASH(ProductID),
-	    PARTITION   (   LogDate RANGE RIGHT FOR VALUES
+	    PARTITION   (   EventDate RANGE RIGHT FOR VALUES
 	                   ( 20160704, 20160705, 20160706)
 	                    )
 		)
-	AS 
+	GO
+
+	INSERT INTO TABLE adw.FactWebsiteActivity
 	SELECT
-		LogDate,
-		ProductID,
-		Title, 
-		Category,
-		ProdType,
-		TotalClicked
+		EventDate,
+		UserID,
+		Type,
+		ProductID, 
+		Quantity, 
+		Price
 	FROM asb.ProductLogExternal
+	WHERE Type='checkout'
 	GO
 	````
 
-1. Azure SQL Data Warehouse does not automatically manage your statistics.  It is a good practice to create single column statistics on your internally managed tables immediately after a load. There are some choices for statistics. For example, if you create single-column statistics on every column it might take a long time to rebuild statistics. If you know certain columns are not going to be in query predicates, you could skip creating statistics on those columns.
+1. Similarly, let's pull our latest and greatest product catalog data from blob storage.
+
+	````SQL
+	IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'adw' AND TABLE_NAME = 'DimProductCatalog')
+	DROP TABLE adw.DimProductCatalog
+	GO
+
+	CREATE TABLE adw.DimProductCatalog
+	WITH (
+		CLUSTERED COLUMNSTORE INDEX,
+		DISTRIBUTION = HASH(ProductID)
+		)
+	AS 
+	SELECT
+		skuNumber,
+		id,
+		productId,
+		categoryId,
+		categoryName,
+		title,
+		price,
+		salePrice,
+		costPrice,
+		productArtUrl,
+		description,
+		productDetails
+	FROM asb.ProductCatalogExternal
+	GO
+	````
+
+
+1. Azure SQL Data Warehouse does not automatically manage your statistics.  It is a good practice to create single column statistics on your internally managed tables immediately after a load. There are some choices for statistics. For example, if you create single-column statistics on every column it might take a long time to rebuild statistics. If you know certain columns are not going to be in query predicates, you could skip creating statistics on those columns. For instance, you'll notice that we have not done statistics on the 'UserID' column, because we will not be using it for our query.
 
 	````SQL	
-	CREATE STATISTICS Stat_adw_FactProductLog_LogDate on adw.FactProductLog(LogDate);
-	CREATE STATISTICS Stat_adw_FactProductLog_ProductID on adw.FactProductLog(ProductID);
-	CREATE STATISTICS Stat_adw_FactProductLog_category on adw.FactProductLog(category);
-	CREATE STATISTICS Stat_adw_FactProductLog_title on adw.FactProductLog(title);
-	CREATE STATISTICS Stat_adw_FactProductLog_prodtype on adw.FactProductLog(prodtype);
-	CREATE STATISTICS Stat_adw_FactProductLog_totalclicked on adw.FactProductLog(totalclicked);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_EventDate on adw.FactProductLog(EventDate);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_Type on adw.FactProductLog(Type);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_ProductID on adw.FactProductLog(ProductID);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_Quantity on adw.FactProductLog(Quantity);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_Price on adw.FactProductLog(Price);
 	````
 
 <a name="Ex2Task5"></a>
 #### Task 5 - Create a new summary table for reporting ####
 
-Before we move to the next exercise, create a stored procedure to build a summary table that will be used for reporting and analysis.
+Before we move to the next exercise, create a stored procedure to understand our most profitable products that will be used for reporting and analysis.
 
 1. Execute the following statement to create the summary table and table statistics.
 	````SQL	
 
-	CREATE PROCEDURE adw.asp_populate_productlogsummary AS
+	CREATE PROCEDURE adw.asp_populate_ProfitableProducts AS
 	BEGIN
-	IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'adw' AND TABLE_NAME = 'ProductLogSummary')
-	DROP TABLE adw.ProductLogSummary;
-	CREATE TABLE adw.ProductLogSummary 
+	IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'adw' AND TABLE_NAME = 'ProfitableProducts')
+	DROP TABLE adw.ProfitableProducts
+	GO
+
+	CREATE TABLE adw.ProfitableProducts 
 	WITH
 	(   
 	    CLUSTERED COLUMNSTORE INDEX,
 	    DISTRIBUTION = ROUND_ROBIN
 	)
 	AS
-	SELECT
-		LogDate,
-		Category,
-		Title,
-		SUM(CASE WHEN prodtype = 'view' THEN totalClicked ELSE 0 END) AS ProdViews,
-		SUM(CASE WHEN prodtype = 'add' THEN totalClicked ELSE 0 END) AS ProdAdds
-	FROM adw.FactProductLog 
-	GROUP BY LogDate, Title, Category
+	SELECT 
+		a.ProductId, 
+		b.CategoryName,
+		SUM(a.Price - (b.CostPrice*a.Quantity)) as Profit
+	FROM adw.FactWebsiteActivity AS a LEFT OUTER JOIN adw.DimProductCatalog AS b
+		ON a.ProductId = b.ProductId
+	WHERE a.eventdate > DATEDIFF(day, 30, GetDate())
+	GROUP BY ProductId, a.CategoryName
+	ORDER BY Profit DESC, a.ProductId ASC;
+
 	
-	CREATE STATISTICS Stat_adw_ProductLogSummary_LogDate on adw.ProductLogSummary(LogDate);
-	CREATE STATISTICS Stat_adw_ProductLogSummary_category on adw.ProductLogSummary(category);
-	CREATE STATISTICS Stat_adw_ProductLogSummary_title on adw.ProductLogSummary(title);
-	CREATE STATISTICS Stat_adw_ProductLogSummary_prodviews on adw.ProductLogSummary(prodviews);
-	CREATE STATISTICS Stat_adw_ProductLogSummary_prodadds on adw.ProductLogSummary(prodadds);
+	CREATE STATISTICS Stat_adw_ProfitableProducts_ProductId on adw.ProfitableProducts(ProductId);
+	CREATE STATISTICS Stat_adw_ProfitableProducts_CategoryName on adw.ProfitableProducts(CategoryName);
 	END
 	GO
 	````
@@ -648,13 +734,13 @@ Before we move to the next exercise, create a stored procedure to build a summar
 
 	_Creating schema for Data Warehouse_
 
-1. Execute the stored procedure to create the table.  Issue a select statement on the ProductLogSummary table to verify the procedure executed correctly.
+1. Execute the stored procedure to create the table.  Issue a select statement on the ProfitableProducts table to verify the procedure executed correctly.
 
 	````SQL	
 
-	exec adw.asp_populate_productlogsummary; 
+	exec adw.asp_populate_ProfitableProducts; 
 
-	SELECT * FROM adw.ProductLogSummary;
+	SELECT * FROM adw.ProfitableProducts;
 
 	````
 	
@@ -707,6 +793,9 @@ In this task, you'll create the linked services.  Linked Services are essentiall
 - Azure Storage
 - HDInsight
 - Azure Data Warehouse
+
+
+>**Note:** It is recommended that you open a new tab and navigate to the Azure portal and use this tab to copy the keys/server names needed to create the linked services in Data Factory.
 
 
 1. In the *Data Factory* blade, click **Author and deploy** tile to launch the *Editor* for the data factory.
@@ -806,7 +895,7 @@ In this task, you'll create the input and output tables corresponding to the lin
 
 1. In the Editor for the Data Factory, click **New dataset** button on the toolbar and click **Azure Blob storage** from the drop down menu.
 
-1. Change the **name** propety to "LogJsonFromBlob" and the **linkedServiceName** property to "AzureStorageLinkedService".
+1. Change the **name** propety to "RawJsonData" and the **linkedServiceName** property to "AzureStorageLinkedService".
 
 1. Remove the **structure** property. The file is in JSON format and the structure can be omitted.
 
@@ -846,7 +935,7 @@ In this task, you'll create the input and output tables corresponding to the lin
     
 	````JavaScript
 	{
-		"name": "LogJsonFromBlob",
+		"name": "RawJsonData",
 		"properties": {
 			"type": "AzureBlob",
 			"linkedServiceName": "AzureStorageLinkedService",
@@ -859,7 +948,7 @@ In this task, you'll create the input and output tables corresponding to the lin
 					 { "name": "Day", "value": { "type": "DateTime", "date": "SliceStart", "format": "dd" } }
 				],
 				"format": {
-					"type": "TextFormat"
+					"type": "JsonFormat"
 				}
 			},
 			"availability": {
@@ -875,35 +964,35 @@ In this task, you'll create the input and output tables corresponding to the lin
 
 1. Repeat the steps to create another dataset for output with the following settings:
 
- 1. **name**: "LogCsvFromBlob"
+ 1. **name**: "WebsiteActivityBlob"
  1. **linkedServiceName**: "AzureStorageLinkedService"
  1. structure (this file is structured using CSV format with the fields specified below):
 
 		````JavaScript
 		"structure": [
 			{
-				"name": "LogDate",
-				"type": "Int32"
+				"name": "eventdate",
+				"type": "DateTime"	
 			},
 			{
-				"name": "ProductID",
-				"type": "Int32"
-			},
-			{
-				"name": "Title",
+				"name": "userid",
 				"type": "String"
 			},
 			{
-				"name": "Category",
+				"name": "type",
 				"type": "String"
 			},
 			{
-				"name": "ProdType",
+				"name": "productid",
 				"type": "String"
 			},
 			{
-				"name": "TotalClicked",
+				"name": "quantity",
 				"type": "Int32"
+			},
+			{
+				"name": "price",
+				"type": "Double"
 			}
 		],
 		````
@@ -912,13 +1001,13 @@ In this task, you'll create the input and output tables corresponding to the lin
 
 		````JavaScript
 		"typeProperties": {
-			"folderPath": "processeddata/logs/{Year}/{Month}/{Day}",
+			"folderPath": "processeddata/structuredlogs/{Year}/{Month}/{Day}",
 			"partitionedBy": 
-			[
-				 { "name": "Year", "value": { "type": "DateTime", "date": "SliceStart", "format": "yyyy" } },
-				 { "name": "Month", "value": { "type": "DateTime", "date": "SliceStart", "format": "MM" } }, 
-				 { "name": "Day", "value": { "type": "DateTime", "date": "SliceStart", "format": "dd" } }
-			],
+				[
+					 { "name": "Year", "value": { "type": "DateTime", "date": "SliceStart", "format": "yyyy" } },
+					 { "name": "Month", "value": { "type": "DateTime", "date": "SliceStart", "format": "MM" } }, 
+					 { "name": "Day", "value": { "type": "DateTime", "date": "SliceStart", "format": "dd" } }
+				],
 			"format": {
 				"type": "TextFormat"
 			}
@@ -934,47 +1023,47 @@ In this task, you'll create the input and output tables corresponding to the lin
 		}
 		````
 
- 1. Make sure the final _LogCsvFromBlob_ dataset looks like the following snippet:
+ 1. Make sure the final _WebsiteActivityBlob_ dataset looks like the following snippet:
  
 		````JavaScript
 		{
-			"name": "LogCsvFromBlob",
+			"name": "WebsiteActivityBlob",
 			"properties": {
 				"type": "AzureBlob",
 				"linkedServiceName": "AzureStorageLinkedService",
 				"structure": [
 					{
-						"name": "LogDate",
-						"type": "Int32"
-					},					
-					{
-						"name": "ProductID",
-						"type": "Int32"
-					},
-					{
-						"name": "Title",
+						"name": "eventdate",
 						"type": "String"
 					},
 					{
-						"name": "Category",
+						"name": "userid",
 						"type": "String"
 					},
 					{
-						"name": "ProdType",
+						"name": "type",
 						"type": "String"
 					},
 					{
-						"name": "TotalClicked",
+						"name": "productid",
+						"type": "String"
+					},
+					{
+						"name": "quantity",
 						"type": "Int32"
+					},
+					{
+						"name": "price",
+						"type": "Double"
 					}
 				],
 				"typeProperties": {
-					"folderPath": "processeddata/logs/{Year}/{Month}/{Day}",
+					"folderPath": "processeddata/structuredlogs/{Year}/{Month}/{Day}",
 					"partitionedBy": 
 					[
-						 { "name": "Year", "value": { "type": "DateTime", "date": "SliceStart", "format": "yyyy" } },
-						 { "name": "Month", "value": { "type": "DateTime", "date": "SliceStart", "format": "MM" } }, 
-						 { "name": "Day", "value": { "type": "DateTime", "date": "SliceStart", "format": "dd" } }
+					 { "name": "Year", "value": { "type": "DateTime", "date": "SliceStart", "format": "yyyy" } },
+					 { "name": "Month", "value": { "type": "DateTime", "date": "SliceStart", "format": "MM" } }, 
+					 { "name": "Day", "value": { "type": "DateTime", "date": "SliceStart", "format": "dd" } }
 					],
 					"format": {
 						"type": "TextFormat"
@@ -990,37 +1079,133 @@ In this task, you'll create the input and output tables corresponding to the lin
 
  1. Click **Deploy** on the toolbar to deploy the dataset.
 
+ 1. (Optional) Finally, let's create a raw and structured dataset for the Product Catalog data. Following the steps laid out in the previous steps, our dataset should look as follows. Do not forget to mark this dataset as external.
+ 	
+>**Note:** This step is optional since we've already added the Product Catalog data to the SQL DW database. 
+ 		````JavaScript
+		{
+			"name": "RawProductCatalogBlob",
+			"properties": {
+				"type": "AzureBlob",
+				"linkedServiceName": "AzureStorageLinkedService",
+				"typeProperties": {
+					"folderPath": "partsunlimited/productcatalog",
+					"format": {
+						"type": "JsonFormat"
+					}
+				},
+				"availability": {
+					"frequency": "Day",
+					"interval": 1
+				}
+				"external": true
+			}
+		}
+		````
+
+ 1. Here's what the Structured Dataset would look like.
+
+	````JavaScript
+		{
+			"name": "StructuredProductCatalogBlob",
+			"properties": {
+				"type": "AzureBlob",
+				"linkedServiceName": "AzureStorageLinkedService",
+				"structure": [
+					{
+						"name": "skuNumber",
+						"type": "String"
+					},
+					{
+						"name": "id",
+						"type": "Int32"
+					},
+					{
+						"name": "productId",
+						"type": "String"
+					},
+					{
+						"name": "categoryId",
+						"type": "String"
+					},
+					{
+						"name": "categoryName",
+						"type": "String"
+					},
+					{
+						"name": "title",
+						"type": "String"
+					},
+					{
+						"name": "price",
+						"type": "Double"
+					},
+					{
+						"name": "salePrice",
+						"type": "Double"
+					},
+					{
+						"name": "costPrice",
+						"type": "Double"
+					},
+					{
+						"name": "productArtUrl",
+						"type": "String"
+					},
+					{
+						"name": "description",
+						"type": "String"
+					},
+					{
+						"name": "productDetails",
+						"type": "String"
+					}			
+				],
+				"typeProperties": {
+					"folderPath": "processeddata/product_catalog",
+					"format": {
+						"type": "TextFormat"
+					}
+				},
+				"availability": {
+					"frequency": "Day",
+					"interval": 1
+				}
+			}
+		}
+	````
+
 1. Create the dataset for the SQL Data Warehouse output using the same structure:
 
  1. In the Editor for the Data Factory, click **New dataset** button on the toolbar and click **Azure SQL Data Warehouse** from the drop down menu.
- 1. Set the **name** to "LogsSqlDWOuput" and the **linkedServiceName** to "AzureSqlDWLinkedService"
+ 1. Set the **name** to "WebsiteActivitySQL" and the **linkedServiceName** to "AzureSqlDWLinkedService"
  1. Use the same structure as the previous dataset:
 
 		````JavaScript
 		"structure": [
 			{
-				"name": "LogDate",
+				"name": "EventDate",
 				"type": "Int32"
 			},
 			{
-				"name": "ProductID",
+				"name": "UserId",
+				"type": "String"
+			},
+			{
+				"name": "Type",
+				"type": "String"
+			},
+			{
+				"name": "ProductId",
+				"type": "String"
+			},
+			{
+				"name": "Quantity",
 				"type": "Int32"
 			},
 			{
-				"name": "Title",
-				"type": "String"
-			},
-			{
-				"name": "Category",
-				"type": "String"
-			},
-			{
-				"name": "ProdType",
-				"type": "String"
-			},
-			{
-				"name": "TotalClicked",
-				"type": "Int32"
+				"name": "Price",
+				"type": "Double"
 			}
 		],
 		````
@@ -1029,7 +1214,7 @@ In this task, you'll create the input and output tables corresponding to the lin
 
 		````JavaScript
 		"typeProperties": {
-			"tableName": "adw.FactProductLog"
+			"tableName": "adw.FactWebsiteActivity"
 		},
 		````
 
@@ -1042,29 +1227,21 @@ In this task, you'll create the input and output tables corresponding to the lin
 		}
 		````
 
- 1. Make sure the final _LogsSqlDWOutput_ dataset looks like the following snippet:
+ 1. Make sure the final _WebsiteActivitySQL_ dataset looks like the following snippet:
  
 		````JavaScript
 		{
-			"name": "LogsSqlDWOutput",
+			"name": "WebsiteActivitySQL",
 			"properties": {
 				"type": "AzureSqlDWTable",
 				"linkedServiceName": "AzureSqlDWLinkedService",
 				"structure": [
 					{
-						"name": "LogDate",
+						"name": "EventDate",
 						"type": "Int32"
 					},
 					{
-						"name": "ProductID",
-						"type": "Int32"
-					},
-					{
-						"name": "Title",
-						"type": "String"
-					},
-					{
-						"name": "Category",
+						"name": "UserId",
 						"type": "String"
 					},
 					{
@@ -1072,12 +1249,20 @@ In this task, you'll create the input and output tables corresponding to the lin
 						"type": "String"
 					},
 					{
-						"name": "TotalClicked",
+						"name": "ProductId",
+						"type": "String"
+					},
+					{
+						"name": "Quantity",
 						"type": "Int32"
+					},
+					{
+						"name": "Price",
+						"type": "Double"
 					}
 				],
 				"typeProperties": {
-					"tableName": "adw.FactProductLog"
+					"tableName": "adw.FactWebsiteActivity"
 				},
 				"availability": {
 					"frequency": "Day",
@@ -1089,6 +1274,80 @@ In this task, you'll create the input and output tables corresponding to the lin
 
  1. Click **Deploy** on the toolbar to deploy the dataset.
 
+
+ 1. Let's also create a SQL DW dataset for the Product Catalog table. Following the steps from the previous datasets, the JSON should look as follows:
+>**NOTE**: Using the 'Clone' option for the ADF JSON helps speed up the process.
+ 
+	````JavaScript
+			{
+			"name": "StructuredProductCatalogSQL",
+			"properties": {
+				"type": "AzureSqlDWTable",
+				"linkedServiceName": "AzureSqlDWLinkedService",
+				"structure": [
+					{
+						"name": "skuNumber",
+						"type": "String"
+					},
+					{
+						"name": "id",
+						"type": "Int32"
+					},
+					{
+						"name": "productId",
+						"type": "String"
+					},
+					{
+						"name": "categoryId",
+						"type": "String"
+					},
+					{
+						"name": "categoryName",
+						"type": "String"
+					},
+					{
+						"name": "title",
+						"type": "String"
+					},
+					{
+						"name": "price",
+						"type": "Double"
+					},
+					{
+						"name": "salePrice",
+						"type": "Double"
+					},
+					{
+						"name": "costPrice",
+						"type": "Double"
+					},
+					{
+						"name": "productArtUrl",
+						"type": "String"
+					},
+					{
+						"name": "description",
+						"type": "String"
+					},
+					{
+						"name": "productDetails",
+						"type": "String"
+					}			
+				],
+				"typeProperties": {
+					"tableName": "adw.DimProductCatalog"
+				},
+				"availability": {
+					"frequency": "Day",
+					"interval": 1
+				}
+			}
+		}
+
+	```` 
+
+ 1. Click **Deploy** on the toolbar to deploy the dataset.
+ 
 		![Data sets created](Images/ex1task3-datasets-created.png?raw=true "Data sets created")
 
 		_Data sets created_
@@ -1114,7 +1373,7 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 
 1. In the **Author and Deploy** blade of the Data Factory, click **New dataset** button on the toolbar and select **Azure Blob Storage**. We will create a dummy dataset for the Hive activity that runs the addpartitions.hql script that does not requires any input/output dataset in the data factory.
 
-1. Update the dataset JSON to the following snippet and click **Deploy** to create the dummy dataset.
+1. Update the dataset JSON to the following snippet and click **Deploy** to create the dummy dataset. We will use this dummy dataset to perform partition creation in HiveQL.
 
 	````JavaScript
 	{
@@ -1140,9 +1399,9 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 
 1. Change the **name** to "JsonLogsToTabularPipeline" and set the description to "Create tabular data using Hive".
 
-1. Set the **start** date to be 3 days before the current date (for instance: "2016-04-29T00:00:00Z").
+1. Set the **start** date to be 3 days before the current date (for instance: "2016-10-16T00:00:00Z").
 
-1. Set the **end** date to be tomorrow.
+1. Set the **end** date to be tomorrow (for instance: "2016-10-20T00:00:00Z").
 
 1. Add a Hive activity to run the "addpartitions.hql" script located in the storage at "partsunlimited\Scripts\addpartitions.hql" and pass the slice date components as parameters. Make sure to replace the **<****StorageAccountName****>** placeholder with the storage account name:
 
@@ -1163,7 +1422,7 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 				  }
 			 },
 			 "inputs": [
-				{ "name": "LogJsonFromBlob" }
+				{ "name": "RawJsonData" }
 			 ],
 			 "outputs": [
 				{ "name": "DummyDataset" }
@@ -1178,7 +1437,7 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 
 	This activity will run the **addpartitions.hql** script to create the date partition corresponding to the current slice.
 
-1. Add another Hive activity to run the "logstocsv.hql" script located in the storage at "partsunlimited\Scripts\logtostats.hql" and pass the slice date components as parameters:
+1. Add another Hive activity to run the "structuredlogs.hql" script located in the storage at "partsunlimited\Scripts\structuredlogs.hql" and pass the slice date components as parameters:
 
 	````JavaScript
 	"activities": [
@@ -1190,7 +1449,7 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 			 "type": "HDInsightHive",
 			 "linkedServiceName": "HDInsightLinkedService",
 			 "typeProperties": {
-				  "scriptPath": "partsunlimited\\Scripts\\logstocsv.hql",
+				  "scriptPath": "partsunlimited\\Scripts\\structuredlogs.hql",
 				  "scriptLinkedService": "AzureStorageLinkedService",
 				  "defines": {
 				      "Year": "$$Text.Format('{0:yyyy}', SliceStart)",
@@ -1199,10 +1458,10 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 				  }
 			 },
 			 "inputs": [
-				  { "name": "LogJsonFromBlob" }
+				  { "name": "DummyDataset" }
 			 ],
 			 "outputs": [
-				  { "name": "LogCsvFromBlob" }
+				  { "name": "WebsiteActivityBlob" }
 			 ],
 			 "scheduler": {
 				  "frequency": "Day",
@@ -1213,6 +1472,11 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 	````
 
 1. Click **Deploy** on the toolbar to create and deploy the pipeline.
+
+
+1. (Optional) Finally, let's also create a pipeline to move our product catalog data.
+
+
 
 <a name="Ex4Task2"></a>
 #### Task 2 - Create a new pipeline to move the HDI output to SQL Data Warehouse ####
@@ -1227,29 +1491,28 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
 
 1. Set the **end** date to be tomorrow.
 
-1. Add a Move activity to move the generated tabular blobs to the SQL Data Warehouse.
-
+1. (Optional) Let's first create a Copy activity to move the Product Catalog data from Blob Storage to SQL DW. 
 	````JavaScript
 	"activities": [
 		{
 			"type": "Copy",
-			"name": "LogsToDWActivity",
+			"name": "ProductCatalogToDWActivity",
 			"typeProperties": {
 				"source": {
 					"type": "BlobSource"
 				},
 				"sink": {
-					"type": "SqlDWSink"
+					"type": "SqlDWSink"	
 				}
 			},
 			"inputs": [
 				{
-					"name": "LogCsvFromBlob"
+					"name": "WebsiteActivityBlob"
 				}
 			],
 			"outputs": [
 				{
-					"name": "LogsSqlDWOutput"
+					"name": "StructuredProductCatalogSQL"
 				}
 			],
 			"scheduler": {
@@ -1257,7 +1520,45 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
 				"interval": 1
 			}
 		}
-	],
+	]
+	
+	````
+
+1. Add a Move activity to move the generated tabular blobs to the SQL Data Warehouse.
+
+	````JavaScript
+	"activities": [
+		{
+			"type": "Copy",
+			"name": "HiveToDWActivity",
+			"typeProperties": {
+				"source": {
+					"type": "BlobSource"
+				},
+				"sink": {
+					"type": "SqlDWSink",
+					"sqlWriterStoredProcedureName": "adw.asp_populate_ProfitableProducts"
+				}
+			},
+			"inputs": [
+				{
+					"name": "WebsiteActivityBlob"
+				},
+				{
+					"name": "StructuredProductCatalogSQL"
+				}
+			],
+			"outputs": [
+				{
+					"name": "WebsiteActivitySQL"
+				}
+			],
+			"scheduler": {
+				"frequency": "Day",
+				"interval": 1
+			}
+		}
+	]
 	````
 
 1. Click **Deploy** on the toolbar to create and deploy the pipeline.
@@ -1327,20 +1628,20 @@ In this task, you'll explore the features of the Monitoring App using the data f
 There are more features to continue exploring in the Monitoring App. You can also configure _alerts_ to create email notifications on various events (failure, success, etc.), re-run failed activities and even configure the app layout by dragging the panes.
 
 <a name="Ex4Task4"></a>
-#### Task 4 - Executing Stored Procedure in SQL Data Warehouse ####
+#### (Optional) Task 4 - Executing Stored Procedure in SQL Data Warehouse ####
 
-In this task you will add a new pipeline to run the stored procedure that populates the adw.ProductLogSummary table in the SQL Data Warehouse.
+In this task you will add a new pipeline to run the stored procedure that populates the adw.ProfitableProducts table in the SQL Data Warehouse.
 
-You can use the SQL Server Stored Procedure activity in a Data Factory pipeline to invoke a stored procedure.
+Instead of invoking the Stored Procedure along with the copy activity, you can use the SQL Server Stored Procedure activity in a Data Factory pipeline to invoke a stored procedure.
 
-1. Create a new dataset for the ProductStats table that will be the output of the new pipeline.
+1. Create a new dataset for the ProfitableProducts table that will be the output of the new pipeline.
  1. In the Editor for the Data Factory, click **New dataset** button on the toolbar and click **Azure SQL Data Warehouse** from the drop down menu.
  1. Set the **name** to "StatsSqlDWOuput" and the **linkedServiceName** to "AzureSqlDWLinkedService"
- 1. Set the **tableName** property to **dbo.ProductStats**:
+ 1. Set the **tableName** property to **adw.ProfitableProducts**:
 
 		````JavaScript
 		"typeProperties": {
-			"tableName": "adw.FactProductLog"
+			"tableName": "adw.ProfitableProducts"
 		},
 		````
 
@@ -1353,17 +1654,17 @@ You can use the SQL Server Stored Procedure activity in a Data Factory pipeline 
 		}
 		````
 
- 1. Make sure the final _LogsSqlDWOutput_ dataset looks like the following snippet:
+ 1. Make sure the final _ProfitableProductSP_ dataset looks like the following snippet:
  
 		````JavaScript
 		{
-			 "name": "StatsSqlDWOutput",
+			 "name": "ProfitableProductsSQL",
 			 "properties": {
 				  "published": false,
 				  "type": "AzureSqlDWTable",
 				  "linkedServiceName": "AzureSqlDWLinkedService",
 				  "typeProperties": {
-						"tableName": "adw.ProductLogSummary"
+						"tableName": "adw.ProfitableProducts"
 				  },
 				  "availability": {
 						"frequency": "Day",
@@ -1375,7 +1676,7 @@ You can use the SQL Server Stored Procedure activity in a Data Factory pipeline 
 
  1. Click **Deploy** on the toolbar to create and deploy the new dataset.
 
-1. Now, create the pipeline to run the **sp_populate_stats** stored procedure.
+1. Now, create the pipeline to run the **adw.asp_populate_ProfitableProducts** stored procedure.
  1. In the **Author and Deploy** blade of the Data Factory, click **New pipeline** button on the toolbar (click ellipsis button if you don't see the New pipeline button).
  1. Change the **name** to "PopulateProductStatsPipeline" and set the description to "Run stored procedure to populate product stats".
  1. Set the **start** date to be 2 days before the current date.
@@ -1387,18 +1688,26 @@ You can use the SQL Server Stored Procedure activity in a Data Factory pipeline 
 			{
 				 "type": "SqlServerStoredProcedure",
 				 "typeProperties": {
-					  "storedProcedureName": "adw.asp_populate_productlogsummary"
+					  "storedProcedureName": "adw.asp_populate_ProfitableProducts"
 				 },
+				 "inputs":[
+					{
+						"name": "WebsiteActivitySQL"
+					},
+					{
+						"name": "StructuredProductCatalogSQL"
+					}
+				 ],
 				 "outputs": [
 					  {
-							"name": "StatsSqlDWOutput"
+							"name": "ProfitableProductsSQL"
 					  }
 				 ],
 				 "scheduler": {
 					  "frequency": "Day",
 					  "interval": 1
 				 },
-				 "name": "SprocActivitySample"
+				 "name": "SqlDWSprocActivity"
 			}
 		],
 		````
@@ -1411,7 +1720,7 @@ You can use the SQL Server Stored Procedure activity in a Data Factory pipeline 
 
 	_New pipeline to run stored procedure_
 
-1. Make sure the output dataset slices have completed with success so the adw.ProductLogSummary table is populated.  Once the summary table is populated you can proceed with the next exercise to consume the just populated table.
+1. Make sure the output dataset slices have completed with success so the adw.ProfitableProducts table is populated.  Once the summary table is populated you can proceed with the next exercise to consume the just populated table.
 
 	![New pipeline output slices](Images/ex3task4-sp-pipeline-slices.png?raw=true "New pipeline output slices")
 
@@ -1466,7 +1775,7 @@ In this task, you'll create a report based on the SQL Data Warehouse dataset you
 
 	In the navigation pane, your reports are listed under the **Reports** heading. Each listed report represents one or more pages of visualizations based on one or more of the underlying datasets.
 
-1. In the _Fields_ pane, check **category** and **views** from the **adf.ProductLogSummary** table.
+1. In the _Fields_ pane, check **category** and **views** from the **adf.ProfitableProducts** table.
 
 	![Product fields](Images/ex4task2-fields.png?raw=true "Product fields")
 

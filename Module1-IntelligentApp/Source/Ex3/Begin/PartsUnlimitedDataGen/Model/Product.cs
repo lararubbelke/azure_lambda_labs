@@ -28,6 +28,7 @@ namespace PartsUnlimited.Models
         public int RecommendationId { get; set; }
 
         public int CategoryId { get; set; }
+        public string CategoryName { get; set; }
 
         public string Title { get; set; }
 

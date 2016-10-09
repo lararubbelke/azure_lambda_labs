@@ -30,7 +30,7 @@
         static string hubhostName = string.Empty;
         static string deviceId = string.Empty;
         static DeviceClient deviceClient;
- 
+        static Random random = new Random();
 
         static void Main(string[] args)
         {
@@ -103,29 +103,73 @@
             return documentClient.AsReliable(documentRetryStrategy);
         }
 
+        private static int GetRandomEventNum(int num_choices, List<int> choice_weight)
+        {
+            int sum_of_weight = 0;
+            for (int i = 0; i < num_choices; i++)
+            {
+                sum_of_weight += choice_weight[i];
+            }
+
+            int rnd = random.Next(sum_of_weight);
+            for (int i = 0; i < num_choices; i++)
+            {
+                if (rnd < choice_weight[i])
+                    return i;
+                rnd -= choice_weight[i];
+            }
+
+            return 1;
+        }
+
         private static void GenerateRandomEvents()
         {
             var categories = SampleData.GetCategories().ToList();
             var products = SampleData.GetProducts(categories).ToList();
             var eventTypes = new List<string>() { "add", "view", "checkout", "remove" };
-            var random = new Random();
+            var eventWeight = new List<int>() {32, 54, 20, 10 };
+
+            /*
+            var messagestring = JsonConvert.SerializeObject(products, new JsonSerializerSettings() { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+            System.IO.File.WriteAllText(@".\productcatalog.json", messagestring);
+            */
+
+
 
             while (true)
             {
-                var randomProduct = products[random.Next(products.Count)];
-                var randomEventType = eventTypes[random.Next(eventTypes.Count)];
+                var userId = random.Next(1, 250).ToString();
+                var eventNum = GetRandomEventNum(eventTypes.Count, eventWeight);
+                var randomProduct = products[eventNum];
+                var randomEventType = eventTypes[eventNum];
+                var eventMessage = new EventMessage();
 
-                var eventMessage = new EventMessage
+                if (randomEventType.Equals("checkout"))
                 {
-                    EventDate = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                    Type = randomEventType,
-                    ProductId = randomProduct.ProductId,
-                    Title = randomProduct.Title,
-                    Category = randomProduct.Category.Name
-                };
+                    var qty = random.Next(1, 4);
+                    eventMessage = new EventMessage
+                    {
+                        EventDate = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                        UserId = userId,
+                        Type = randomEventType,
+                        ProductId = randomProduct.ProductId,
+                        quantity = qty,
+                        Price = (randomProduct.SalePrice * qty)
+                    };
+                }
+                else
+                {
+                    eventMessage = new EventMessage
+                    {
+                        EventDate = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                        UserId = userId,
+                        Type = randomEventType,
+                        ProductId = randomProduct.ProductId
+                    };
+                }
 
                 SendingRandomMessages(eventMessage);
-                Thread.Sleep(200);
+                Thread.Sleep(500);
             }
         }
 
@@ -141,7 +185,7 @@
                 await deviceClient.SendEventAsync(message);
 
                 //eventHubClient.Send(data);
-                Console.WriteLine("Sent message: {0} at time {1}.",eventMessage.ToString() , DateTime.Now.ToString("yyyyMMdd hh:mm:ss"));
+                Console.WriteLine("Sent message: {0} at time {1}.",eventMessage.ToString() , DateTime.UtcNow.ToString("yyyyMMdd hh:mm:ss"));
             }
             catch (Exception exception)
             {
