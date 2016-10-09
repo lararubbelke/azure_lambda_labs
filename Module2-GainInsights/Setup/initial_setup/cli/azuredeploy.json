@@ -2,7 +2,7 @@
 "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
 "contentVersion": "1.0.0.0",
 "parameters": {
-    "ClusterName":{
+    "hdiClusterNamePrefix":{
         "type":"string",
         "defaultValue":"hdiprecon"
     },
@@ -63,16 +63,16 @@
         }
     },
     "clusterType": {
-    "type": "string",
-    "defaultValue": "hadoop",
-    "allowedValues": [
-        "hadoop",
-        "hbase",
-        "storm",
-        "spark"
-    ],
-    "metadata": {
-        "description": "The type of the HDInsight cluster to create."
+        "type": "string",
+        "defaultValue": "hadoop",
+        "allowedValues": [
+            "hadoop",
+            "hbase",
+            "storm",
+            "spark"
+        ],
+        "metadata": {
+            "description": "The type of the HDInsight cluster to create."
         }
     },
     "clusterWorkerNodeCount": {
@@ -88,22 +88,34 @@
     },
     "sqlServerSubName":{
         "type":"string",
-        "defaultValue":"sqlsvr"
+        "defaultValue":"readinesssqlsvr"
     },
     "sqlDbName":{
         "type":"string",
         "defaultValue":"hdimetastore"
+    },
+    "SqlDWName":{
+        "type":"string",
+        "defaultValue":"readinessdw"
+    },
+    "SqlDWServiceLevelObjective":{
+        "defaultValue": "DW100",
+        "type": "string",
+        "metadata": {
+            "description": "DWU for the Azure DW."
+      }
     }
 },
 "variables":{
     "defaultApiVersion": "2015-05-01-preview",
     "clusterApiVersion": "2015-03-01-preview",
-    "clusterStorageAccountName": "[concat(parameters('storageAccountSubName'),cast(parameters('HDIClusterPrefix'),int))]",  //TODO: Check the proper way of casting
-    "sqlServerName":"[concat(parameters('sqlServerSubName'),cast(parameters('HDIClusterPrefix'),int))]"
+    "clusterStorageAccountName": "[concat(parameters('storageAccountSubName'),int(parameters('hdiClusterSuffix')))]", 
+    "sqlServerName":"[concat(parameters('sqlServerSubName'),int(parameters('hdiClusterSuffix')))]",
+    "hdiClusterName":"[concat(parameters('hdiClusterNamePrefix'),int(parameters('hdiClusterSuffix')))]"
 },
 "resources":
 [
-    {   //TODO: Learn how to Create a Container from an ARM script
+    { 
     "name": "[variables('clusterStorageAccountName')]",
     "type": "Microsoft.Storage/storageAccounts",
     "location": "[parameters('location')]",
@@ -114,60 +126,80 @@
         "accountType": "Standard_LRS"
         }
     },
-    {   //TODO: Check how to provision a V12 SQL Server, since DW only uses V12 servers, apparently
+    {   
         "apiVersion": "2014-04-01-preview",
-        "name": "[varaibles('sqlServerName')]",
+        "name": "[variables('sqlServerName')]",
         "type": "Microsoft.Sql/servers",
+        "kind": "v12.0",
         "location": "[parameters('location')]",
         "tags": {
-            "displayName": "[varaibles('sqlServerName')]"
+            "displayName": "[variables('sqlServerName')]"
         },
         "properties": {
             "administratorLogin": "[parameters('sshUserName')]",
-            "administratorLoginPassword": "[parameters('sshPassword')]"
+            "administratorLoginPassword": "[parameters('sshPassword')]",
+            "version": "12.0"
         },
         "resources": [
             {
                 "apiVersion": "2014-04-01-preview",
                 "dependsOn": [
-                   ["concat('Microsoft.Sql/servers/',[varaibles('sqlServerName'))"]
+                   "[concat('Microsoft.Sql/servers/',variables('sqlServerName'))]"
                 ],
                 "location": "[parameters('location')]",
                 "name": "AllowAllWindowsAzureIps",
                 "properties": {
-                    "startIpAddress": "0.0.0.0",        //TODO: Ensure this IP range will work
-                    "endIpAddress": "255.255.255.255"
+                    "startIpAddress": "0.0.0.0",
+                    "endIpAddress": "255.255.255.0"
                 },
                 "type": "firewallrules"
             },
             {
-                "type": "Microsoft.Sql/servers/databases",
-                "name": "[concat(variables('sqlServerName'),'/',parameters('sqlDbName')]",
+                "type": "databases",
+                "name": "[parameters('sqlDbName')]",
                 "apiVersion": "2014-04-01-preview",
                 "location": "[parameters('location')]",
                 "tags": {
                     "displayName": "[parameters('sqlDbName')]"
                 },
                 "dependsOn": [
-                     "[concat('Microsoft.Sql/servers/',varaibles('sqlServerName'))]"
+                     "[concat('Microsoft.Sql/servers/',variables('sqlServerName'))]"
                 ],
                 "properties": {
+                    "status": "Online",
                     "collation": "SQL_Latin1_General_CP1_CI_AS",
-                    "edition": "Basic",
+                    "edition": "Standard",
                     "maxSizeBytes": "1073741824",
-                    "requestedServiceObjectiveName": "Basic"
+                    "requestedServiceObjectiveName": "S1"
                 }
-            }
+            },
+            {
+            "type": "databases",
+            "apiVersion": "2014-04-01-preview",
+            "location": "[parameters('location')]",
+            "name": "[parameters('SqlDWName')]",
+            "properties": {
+                "edition": "DataWarehouse",
+                "requestedServiceObjectiveName": "[parameters('SqlDWServiceLevelObjective')]"
+            },
+            "tags": {
+                "displayName": "SQL Datawarehouse"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Sql/servers/',variables('sqlServerName'))]"
+            ]
+        }
         ]
     },
     {
-    "name": "[parameters('clusterName')]",
+    "name": "[variables('hdiClusterName')]",
     "type": "Microsoft.HDInsight/clusters",
     "location": "[parameters('location')]",
     "apiVersion": "[variables('clusterApiVersion')]",
     "dependsOn": [ 
         "[concat('Microsoft.Storage/storageAccounts/',variables('clusterStorageAccountName'))]",
-        "[concat('Microsoft.Sql/servers/',varaibles('sqlServerName'),'/',parameters('sqlDbName'))]" 
+        "[concat('Microsoft.Sql/servers/',variables('sqlServerName'))]",
+        "[resourceId('Microsoft.SQL/servers/databases', variables('sqlServerName'), parameters('sqlDbName'))]" 
         ],
     "tags": {
 
@@ -180,9 +212,9 @@
         "kind": "[parameters('clusterType')]",
         "configurations": {
             "gateway": {
-            "restAuthCredential.isEnabled": true,
-            "restAuthCredential.username": "[parameters('clusterLoginUserName')]",
-            "restAuthCredential.password": "[parameters('clusterLoginPassword')]"
+                "restAuthCredential.isEnabled": true,
+                "restAuthCredential.username": "[parameters('clusterLoginUserName')]",
+                "restAuthCredential.password": "[parameters('clusterLoginPassword')]"
             },
             "hive-site": {
                 "javax.jdo.option.ConnectionDriverName": "com.microsoft.sqlserver.jdbc.SQLServerDriver",
@@ -220,7 +252,7 @@
             {
                 "name": "[concat(variables('clusterStorageAccountName'),'.blob.core.windows.net')]",
                 "isDefault": true,
-                "container": "[parameters('clusterName')]",
+                "container": "[variables('hdiClusterName')]",
                 "key": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('clusterStorageAccountName')), variables('defaultApiVersion')).key1]"
                 }
             ]
@@ -256,24 +288,6 @@
         ]
         }
     }
-    },
-    {
-        //TODO: create SQL DW
-        "type": "Microsoft.Sql/servers/databases",
-        "name": "SERVER_NAME/SQLdb1",
-        "apiVersion": "2014-04-01-preview",
-        "location": "[resourceGroup().location]",
-        "tags": {
-            "displayName": "SQLdb1"
-        },
-        "dependsOn": [
-            "SERVER_NAME"
-        ],
-        "properties": {
-            "collation": "SQL_Latin1_General_CP1_CI_AS",
-            "edition": "Basic",
-            "maxSizeBytes": "1073741824",
-            "requestedServiceObjectiveName": "Basic"
-        }
     }
-]
+ ]
+}

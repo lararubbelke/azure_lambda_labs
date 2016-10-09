@@ -1507,7 +1507,7 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
 			},
 			"inputs": [
 				{
-					"name": "WebsiteActivityBlob"
+					"name": "StructuredProductCatalogBlob"
 				}
 			],
 			"outputs": [
@@ -1543,9 +1543,6 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
 			"inputs": [
 				{
 					"name": "WebsiteActivityBlob"
-				},
-				{
-					"name": "StructuredProductCatalogSQL"
 				}
 			],
 			"outputs": [
