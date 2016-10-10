@@ -1329,7 +1329,9 @@ In this task, you'll create the input and output tables corresponding to the lin
  1. Click **Deploy** on the toolbar to deploy the dataset.
 
 
- 1. (Optional) Let's also create a SQL DW dataset for the Product Catalog table. Following the steps from the previous datasets, the JSON should look as follows. You'll notice that we've marked this dataset as **external**. For the purposes of this lab, the data is already loaded into SQL DW in the previous exercise.
+ 1. (Optional) Let's also create a SQL DW dataset for the Product Catalog table. Following the steps from the previous datasets, the JSON should look as follows. You'll notice that we've marked this dataset as **external**. For the purposes of this lab, the data is already loaded into SQL DW in the previous exercise. 
+
+>**NOTE:** If you completed all of the other optional exercises, please DO NOT mark this dataset as external.
 >**NOTE**: Using the 'Clone' option for the ADF JSON helps speed up the process.
  
 	````JavaScript
@@ -1519,7 +1521,7 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 
 1. (Optional) Finally, let's also create a pipeline to move our product catalog data.
 
-````JavaScript
+	````JavaScript
 	"activities": [
 		{
 			 //...
@@ -1552,7 +1554,8 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 
 
 <a name="Ex4Task2"></a>
-#### Task 2 - Create a new pipeline to move the HDI output to SQL Data Warehouse ####
+
+####Task 2 - Create a new pipeline to move the HDI output to SQL Data Warehouse####
 
 In this task, you'll create a new pipeline to move the Hive activity output (stored in a blob) to the SQL Data Warehouse database so it can be consumed using Power BI in the next exercise.
 
