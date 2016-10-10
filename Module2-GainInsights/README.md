@@ -498,7 +498,7 @@ In this task, we'll create our hive scripts to process out data. This is used to
 	GROUP BY a.productid, b.title, b.categoryName;
 	````
 
-1. (Optional - Time Dependent) Next, we'll be processing some data using HiveQL. In this scenario, we will process our log data and understand which products get bought together. This will help us understand our audience a little better and come up with better marketing strategies for our e-commerce store. This is used to highlight the ease and ability of a NoSQL ETL engine like Hadoop to work with Arrays within tabular formatted data.
+1. Next, we'll be processing some data using HiveQL. In this scenario, we will process our log data and understand which products get bought together. This will help us understand our audience a little better and come up with better marketing strategies for our e-commerce store. This is used to highlight the ease and ability of a NoSQL ETL engine like Hadoop to work with Arrays within tabular formatted data.
 
 The code can be found in **Setup\Assets\HDInsight\Scripts\5_relatedproducts.hql**
 
