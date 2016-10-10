@@ -1773,9 +1773,6 @@ Instead of invoking the Stored Procedure along with the copy activity, you can u
 				 "inputs":[
 					{
 						"name": "WebsiteActivitySQL"
-					},
-					{
-						"name": "StructuredProductCatalogSQL"
 					}
 				 ],
 				 "outputs": [
