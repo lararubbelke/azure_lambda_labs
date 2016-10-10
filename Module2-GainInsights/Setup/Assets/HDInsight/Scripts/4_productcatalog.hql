@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS RawProductCatalog;
 	CREATE EXTERNAL TABLE RawProductCatalog (
 		jsonentry string
-	) STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/productcatalog/";
+	) STORED AS TEXTFILE LOCATION "wasb://partsunlimited@${hiveconf:StorageAccountName}.blob.core.windows.net/productcatalog/";
 	
 
 	DROP TABLE IF EXISTS ProductCatalog;

@@ -11,9 +11,9 @@ CREATE TABLE adw.FactWebsiteActivity
 	AS
 	SELECT
 		EventDate,
-		UserID,
+		UserId,
 		Type,
-		ProductID, 
+		ProductId, 
 		Quantity, 
 		Price
 	FROM asb.WebsiteActivityExternal

@@ -498,7 +498,7 @@ In this task, we'll create our hive scripts to process out data. This is used to
 	GROUP BY a.productid, b.title, b.categoryName;
 	````
 
-1. (Optional) Next, we'll be processing some data using HiveQL. In this scenario, we will process our log data and understand which products get bought together. This will help us understand our audience a little better and come up with better marketing strategies for our e-commerce store. This is used to highlight the ease and ability of a NoSQL ETL engine like Hadoop to work with Arrays within tabular formatted data.
+1. (Optional - Time Dependent) Next, we'll be processing some data using HiveQL. In this scenario, we will process our log data and understand which products get bought together. This will help us understand our audience a little better and come up with better marketing strategies for our e-commerce store. This is used to highlight the ease and ability of a NoSQL ETL engine like Hadoop to work with Arrays within tabular formatted data.
 
 The code can be found in **Setup\Assets\HDInsight\Scripts\5_relatedproducts.hql**
 
@@ -632,9 +632,9 @@ Now let's create the external tables. All we are doing here is defining column n
 	CREATE EXTERNAL TABLE asb.WebsiteActivityExternal
 	(
 		EventDate datetime2,
-		UserID nvarchar(20),
+		UserId nvarchar(20),
 		Type nvarchar(20),
-		ProductID nvarchar(20), 
+		ProductId nvarchar(20), 
 		Quantity int, 
 		Price float
 	)
@@ -651,8 +651,8 @@ Now let's create the external tables. All we are doing here is defining column n
 	(
 		SkuNumber nvarchar(50),
 		Id int,
-		ProductID nvarchar(20),
-		CategoryID nvarchar(20),
+		ProductId nvarchar(20),
+		CategoryId nvarchar(20),
 		CategoryName nvarchar(100),
 		Title nvarchar(100),
 		Price float,
@@ -672,11 +672,11 @@ Now let's create the external tables. All we are doing here is defining column n
 	SELECT COUNT(*) FROM asb.WebsiteActivityExternal;
 
 	SELECT
-		ProductID,
+		ProductId,
 		SUM(CASE WHEN Type = 'view' THEN Quantity ELSE 0 END) AS ProdViews,
 		SUM(CASE WHEN Type = 'add' THEN Quantity ELSE 0 END) AS ProdAdds
 	FROM asb.WebsiteActivityExternal
-	GROUP BY ProductID;
+	GROUP BY ProductId;
 	````
 
 
@@ -705,9 +705,9 @@ The easiest and most efficient way to load data from Azure blob storage is to us
 	AS
 	SELECT
 		EventDate,
-		UserID,
+		UserId,
 		Type,
-		ProductID, 
+		ProductId, 
 		Quantity, 
 		Price
 	FROM asb.WebsiteActivityExternal
@@ -1329,7 +1329,7 @@ In this task, you'll create the input and output tables corresponding to the lin
  1. Click **Deploy** on the toolbar to deploy the dataset.
 
 
- 1. Let's also create a SQL DW dataset for the Product Catalog table. Following the steps from the previous datasets, the JSON should look as follows:
+ 1. (Optional) Let's also create a SQL DW dataset for the Product Catalog table. Following the steps from the previous datasets, the JSON should look as follows. You'll notice that we've marked this dataset as **external**. For the purposes of this lab, the data is already loaded into SQL DW in the previous exercise.
 >**NOTE**: Using the 'Clone' option for the ADF JSON helps speed up the process.
  
 	````JavaScript
@@ -1379,6 +1379,7 @@ In this task, you'll create the input and output tables corresponding to the lin
 				"typeProperties": {
 					"tableName": "adw.DimProductCatalog"
 				},
+				"external":true,
 				"availability": {
 					"frequency": "Day",
 					"interval": 1
@@ -1518,6 +1519,36 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 
 1. (Optional) Finally, let's also create a pipeline to move our product catalog data.
 
+````JavaScript
+	"activities": [
+		{
+			 //...
+		},
+		{
+			 "name": "ProductCatalogHiveActivity",
+			 "type": "HDInsightHive",
+			 "linkedServiceName": "HDInsightLinkedService",
+			 "typeProperties": {
+				  "scriptPath": "partsunlimited\\Scripts\\4_productcatalog.hql",
+				  "scriptLinkedService": "AzureStorageLinkedService",
+				  "defines": {
+				      "StorageAccountName": "<StorageAccountName>"
+				  }
+			 },
+			 "inputs": [
+				  { "name": "RawProductCatalogBlob" }
+			 ],
+			 "outputs": [
+				  { "name": "StructuredProductCatalogBlob" }
+			 ],
+			 "scheduler": {
+				  "frequency": "Day",
+				  "interval": 1
+			 }
+		}
+	],
+	````
+
 
 
 <a name="Ex4Task2"></a>
@@ -1545,14 +1576,9 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
 				},
 				"sink": {
 					"type": "SqlDWSink",
-					"allowPolyBase": true,	
-					"polyBaseSettings":
-				    {
-				        "rejectType": "percentage",
-				        "rejectValue": 10.0,
-				        "rejectSampleValue": 100,
-				        "useTypeDefault": true 
-				    }
+                    "sqlWriterCleanupScript": "$$Text.Format('TRUNCATE table adw.DimProductCatalog')",
+                    "writeBatchSize": 0,
+                    "writeBatchTimeout": "00:00:00"
 
 				}
 			},
@@ -1588,14 +1614,9 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
 				},
 				"sink": {
 					"type": "SqlDWSink",
-					"sqlWriterStoredProcedureName": "adw.asp_populate_ProfitableProducts",
-					"allowPolyBase": true,	
-					"polyBaseSettings":
-				    {
-				        "rejectType": "percentage",
-				        "rejectValue": 10.0,
-				        "rejectSampleValue": 100,
-				        "useTypeDefault": true 
+                    "sqlWriterCleanupScript": "$$Text.Format('DELETE FROM adw.FactWebsiteActivity WHERE EventDate >= \\'{0:yyyy-MM-dd HH:mm}\\' AND EventDate < \\'{1:yyyy-MM-dd HH:mm}\\'', WindowStart, WindowEnd)",
+                    "writeBatchSize": 0,
+                    "writeBatchTimeout": "00:00:00"
 				    }
 				}
 			},
@@ -1734,10 +1755,10 @@ Instead of invoking the Stored Procedure along with the copy activity, you can u
 
 1. Now, create the pipeline to run the **adw.asp_populate_ProfitableProducts** stored procedure.
  1. In the **Author and Deploy** blade of the Data Factory, click **New pipeline** button on the toolbar (click ellipsis button if you don't see the New pipeline button).
- 1. Change the **name** to "PopulateProductStatsPipeline" and set the description to "Run stored procedure to populate product stats".
- 1. Set the **start** date to be 2 days before the current date.
+ 1. Change the **name** to "SqlDWSprocActivity" and set the description to "Run stored procedure to populate product stats".
+ 1. Set the **start** date to be 4 days before the current date.
  1. Set the **end** date to be tomorrow.
- 1. Add a _SqlServerStoredProcedure_ activity to to run the **sp_populate_stats** stored procedure from the SQL Data Warehouse. Make sure to replace the **<****StorageAccountName****>** placeholder with the storage account name:
+ 1. Add a _SqlServerStoredProcedure_ activity to to run the **adw.asp_populate_ProfitableProduct** stored procedure from the SQL Data Warehouse. Make sure to replace the **<****StorageAccountName****>** placeholder with the storage account name:
 
 		````JavaScript
 		"activities": [

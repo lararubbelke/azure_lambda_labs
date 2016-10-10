@@ -8,9 +8,9 @@ GO
 CREATE EXTERNAL TABLE asb.WebsiteActivityExternal
 	(
 		EventDate datetime2,
-		UserID nvarchar(20),
+		UserId nvarchar(20),
 		Type nvarchar(20),
-		ProductID nvarchar(20), 
+		ProductId nvarchar(20), 
 		Quantity int, 
 		Price float
 	)
@@ -26,8 +26,8 @@ CREATE EXTERNAL TABLE asb.ProductCatalogExternal
 	(
 		SkuNumber nvarchar(50),
 		Id int,
-		ProductID nvarchar(20),
-		CategoryID nvarchar(20),
+		ProductId nvarchar(20),
+		CategoryId nvarchar(20),
 		CategoryName nvarchar(100),
 		Title nvarchar(100),
 		Price float,
@@ -48,9 +48,9 @@ GO
 
 
 	SELECT
-		ProductID,
+		ProductId,
 		SUM(CASE WHEN Type = 'view' THEN Quantity ELSE 0 END) AS ProdViews,
 		SUM(CASE WHEN Type = 'add' THEN Quantity ELSE 0 END) AS ProdAdds
 	FROM asb.WebsiteActivityExternal
-	GROUP BY ProductID;
+	GROUP BY ProductId;
 GO
