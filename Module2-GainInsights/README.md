@@ -60,21 +60,52 @@ You will be prompted for the following information:
 
 In this section you will create a new storage account, and load sample data that will be used later in the module. 
 
-1. Navigate to azure_lambda_labs\Module2-GainInsights\Setup and open the createStorage_uploadFiles.ps1 to edit.  
-	1. Update the $HDInsightFolder variable with the local path where you stored the sample log files for the HDInsight lab.  
-	1. Update the $dwdataFolder variable with the local path where you stored the sample log files for the ADW lab.  
-	1. Save the changes.
-1. Execute the PowerShell script.  
-1. When prompted, input a globally unique name for the Resource Group. Remember the name of the resoruce group, you will use this same resource group when creating the HDI cluster, SQL Data Warehouse and Data Factory.
-1. When prompted, input a globally unique name for the Storage Account.
+Navigate to the Setup Folder under 'Module 2'. You will find a folder called Setup\CLI. 
 
-1. In the [Microsoft Azure portal](https://portal.azure.com/), create a new Storage Account.
- 1. Provide a globally unique name for the new storage account. 
- 1. Select "_Resource Manager_" for the deployment model.
- 1. Select the "_Standard Locally Redundant_" (Standard-LRS) storage account type.  
-	 	>**Note:** Under normal circumstances, you may choose to replicate across regions to support recovery scenarios.  This lab will not require geo-redundency. 
+1. Update the parameters.json file.  Update parameters with a unique suffix for use across the services. Save the file. Particularly, you will want to update the 'uniqueSuffix' variable. This will help keep your resource names globally unique. We will be executing the azuredeplou.json ARM template, which will help us setup the resources needed for this lab.
 
-1. When the storage account has been provisioned and the files are uploaded, open the [Microsoft Azure portal](https://portal.azure.com/) to copy the storage account access key.
+1. Open a command prompt and navigate to the cli directory.  
+
+1. Execute the following statements to log into your Azure subscription
+
+	````
+	azure login
+
+	azure account list
+
+	````
+
+1. Copy the subscription id from the subscription to use in the lab.  Paste it in the following script and execute in the command prompt.
+
+	````
+	azure account set <subcriptionid>
+
+	````
+
+1. Execute the following command to create a resource group.  Use the same unique prefix from the parameters file. 
+
+	````
+	azure group create <ResourceGroupName> <Location>
+
+	````
+
+1. Execute the following statement to execute the ARM template that will deploy the storage account, the HDInsight Cluster and the Azure DW.  Set <DeploymentName> with the same prefix used for the ResourceGroupName.
+
+	````
+	azure group deployment create -f <path to azuredeploy.json> -e <path to parameters.json> -g <ResourceGroupName> -n <DeploymentName>
+
+	````
+
+**This section will complete in approximately 15-25 minutes**
+
+
+<a name="ManualSetupUploadFiles"></a>
+#### Manual Setup 1: Manually uploading the sample files ####
+
+In this section you will create a new storage account, and load sample data that will be used later in the module. 
+
+
+1. When the storage account has been provisioned and the files are uploaded, open the [Microsoft Azure portal](https://portal.azure.com/) to copy the storage account access key.  
 	1. Navigate to All Resources and type the name of your storage account in the Filter items box.  
 	1. Click on the storage account.
 	1. Select Access Keys from the Settings blade to copy the storage account key.  
@@ -99,18 +130,31 @@ In this section you will create a new storage account, and load sample data that
 
 	> _Add an Account_
 
-1. Verify the three new Blob Containers exist. 
-	1. In _Azure Storage Explorer_ expand your account and expand **Blob Containers** to verify containers with the name **partsunlimited**, **processeddata**, and "**dwdata**"
+1. Create mew blob containers by right clicking on the storage account name and clicking 'Create Blob Container'.
 
-You should now have sample data and a new storage account with three blob containers. 
+1. Create the following three containers:
+	1. partsunlimited
+	1. processeddata
+
+1. Verify the three new Blob Containers exist. 
+	1. In _Azure Storage Explorer_ expand your account and expand **Blob Containers** to verify containers with the name **partsunlimited** & **processeddata**
+
+1. Switch back to your repository and make your way to the folder path: Module2-GainInsights\Setup\Assets.
+
+1. Drag the 'logs' and the 'productcatalog' folder to the Storage explorer client and drop it into the 'partsunlimited' container.
+
+
+You should now have sample data and a new storage account with four blob containers. 
 
 - The partsunlimited blob container should contain the raw logs data and scripts folders. 
-- The processeddata container should be empty, as it will be populated during the Azure Data Factory lab.  
-- The dwdata container should have the processedlogs sample data, which will be used during the Azure Data Warehouse lab. 
+- The processeddata container should be empty, as it will be populated during the Azure Data Factory lab.
+- The <clusterName> container which will be the same name as your HDInsight Cluster
+
+
 
 
 <a name="ManualSetupHDI"></a>
-#### Manual Setup 2: Creating the HDI cluster ####
+#### (Optional) Manual Setup 2: Creating the HDI cluster ####
 
 1. In the [Microsoft Azure portal](https://portal.azure.com/), create a new HDI cluster (_New > Data + Analytics > HDInsight_).
 
@@ -301,12 +345,13 @@ In this task, you'll write a Hive query to generate product stats (views and car
 		````SQL
 		CREATE EXTERNAL TABLE IF NOT EXISTS LogsRaw (jsonentry string) 
 		PARTITIONED BY (year INT, month INT, day INT)
-		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/"
+		STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/";
 
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=<year>, month=<month>, day=<firstDay>) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/<year>/<month>/<firstDay>';
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=<year>, month=<month>, day=<secondDay>) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/<year>/<month>/<secondDay>';
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=<year>, month=<month>, day=<thirdDay>) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/<year>/<month>/<thirdDay>';
-		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=<year>, month=<month>, day=<fourthDay>) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/<year>/<month>/<fourthDay>';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=10, day=06) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/10/06';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=10, day=07) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/10/07';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=10, day=08) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/10/08';
+		ALTER TABLE LogsRaw ADD IF NOT EXISTS PARTITION (year=2016, month=10, day=09) LOCATION 'wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/logs/2016/10/09';
+
 		````
 
 		> **Note**: The CREATE EXTERNAL TABLE command that we used here, creates an external table, the data file can be located outside the default container and does not move the data file.
@@ -325,10 +370,10 @@ In this task, you'll write a Hive query to generate product stats (views and car
 
 	> **Note:** Ambari portal offers many features. You can create advanced visualization of the data results using charts, customize the Hive settings, create customized views, among many other options. To learn more about Ambari portal go to [Manage HDInsight clusters by using the Ambari Web UI](https://azure.microsoft.com/documentation/articles/hdinsight-hadoop-manage-ambari/).
 
-1. Write a new Hive query to create the output partitioned table using a columns schema matching the output of the previous query. Paste the snippet below and replace the **StorageAccountName** placeholder.
+1. Write a new Hive query to create the output partitioned table using a columns schema matching the output of the previous query. Paste the snippet below and replace the **StorageAccountName** placeholder. 
 
 	````SQL
-	CREATE EXTERNAL TABLE IF NOT EXISTS websiteActivity (
+	CREATE TABLE IF NOT EXISTS websiteActivity (
 		eventdate string,
 		userid string,
 		type string,
@@ -336,8 +381,18 @@ In this task, you'll write a Hive query to generate product stats (views and car
 		quantity int,
 		price double
 	) PARTITIONED BY (year int, month int, day int) 
-	ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' LINES TERMINATED BY '\n'
+	ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
 	STORED AS TEXTFILE LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/structuredlogs';
+	````
+
+
+1. Let's also go ahead and add a partition on the data. You'll notice that we're also creating a partition for a specific date. This will later be made dynamic using **hiveconf** variable. Paste the snippet below and replace the **StorageAccountName** placeholder. 
+
+	````SQL
+	ALTER TABLE websiteActivity ADD IF NOT EXISTS PARTITION (year=2016, month=10, day=06) LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/structuredlogs/2016/10/06';
+	ALTER TABLE websiteActivity ADD IF NOT EXISTS PARTITION (year=2016, month=10, day=07) LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/structuredlogs/2016/10/07';
+	ALTER TABLE websiteActivity ADD IF NOT EXISTS PARTITION (year=2016, month=10, day=08) LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/structuredlogs/2016/10/08';
+	ALTER TABLE websiteActivity ADD IF NOT EXISTS PARTITION (year=2016, month=10, day=09) LOCATION 'wasb://processeddata@<StorageAccountName>.blob.core.windows.net/structuredlogs/2016/10/09';
 	````
 
 1. **Submit** or **execute** the Hive query to create the output table.
@@ -347,23 +402,41 @@ In this task, you'll write a Hive query to generate product stats (views and car
 
 In this task, we'll create our hive scripts to process out data. This is used to demonstrate the ability of Hadoop to parse nested JSONs easily.
 
-1. Open the file located in **Setup\Assets\HDInsight\Scripts\structuredlogs.hql** and review its content:
+1. Open the file located in **Setup\Assets\HDInsight\Scripts\2_structuredlogs.hql** and review its content:
 
 	````SQL
-	INSERT OVERWRITE TABLE websiteActivity Partition (year=${hiveconf:Year}, month=${hiveconf:Month}, day=${hiveconf:Day})
+	INSERT OVERWRITE TABLE websiteActivity Partition (year, month, day)
 	SELECT CAST(CONCAT(split(get_json_object(jsonentry, "$.eventDate"),'T')[0], ' ', SUBSTRING(split(get_json_object(jsonentry, "$.eventDate"),'T')[1],0,LENGTH(split(get_json_object(jsonentry, "$.eventDate"),'T')[1])-1)) as TIMESTAMP) as eventdate,
 		 get_json_object(jsonentry, "$.userId") as userid,
          get_json_object(jsonentry, "$.type") as type,
          get_json_object(jsonentry, "$.productId") as productid,
 		 CAST(get_json_object(jsonentry, "$.quantity") as int) as quantity,
-         CAST(get_json_object(jsonentry, "$.price") as DOUBLE) as price
+         CAST(get_json_object(jsonentry, "$.price") as DOUBLE) as price,
+		 year, month, day
 	FROM LogsRaw
 	WHERE year=${hiveconf:Year} and month=${hiveconf:Month} and day=${hiveconf:Day};
 	````
 
     Notice this script is, essentially, the Hive query you wrote and tested in the previous task but it insert the results in the output table.
 
-1. Open the file located in **Setup\Assets\HDInsight\Scripts\addpartitions.hql** and review its content:
+1. Let's go ahead and execute this query. Replace the **${hiveconf:Year}**,**${hiveconf:Month}**,**${hiveconf:Day}** with the current year, month and day (eg: 2016/10/06). However, do not save the updated files as we will need the hive variables for our Data Factory automation. 
+
+1. For your convenience, here's a date replaced version of the query above. Also, since we're doing a one time load, we've removed the 'Where' clause as well.
+
+	````SQL
+	INSERT OVERWRITE TABLE websiteActivity Partition (year, month, day)
+	SELECT CAST(CONCAT(split(get_json_object(jsonentry, "$.eventDate"),'T')[0], ' ', SUBSTRING(split(get_json_object(jsonentry, "$.eventDate"),'T')[1],0,LENGTH(split(get_json_object(jsonentry, "$.eventDate"),'T')[1])-1)) as TIMESTAMP) as eventdate,
+		 get_json_object(jsonentry, "$.userId") as userid,
+         get_json_object(jsonentry, "$.type") as type,
+         get_json_object(jsonentry, "$.productId") as productid,
+		 CAST(get_json_object(jsonentry, "$.quantity") as int) as quantity,
+         CAST(get_json_object(jsonentry, "$.price") as DOUBLE) as price,
+		 year, month, day
+	FROM LogsRaw;
+	````
+
+
+1. Open the file located in **Setup\Assets\HDInsight\Scripts\3_addpartitions.hql** and review its content:
 
 	````SQL
 
@@ -375,18 +448,18 @@ In this task, we'll create our hive scripts to process out data. This is used to
     This script adds the partitiones by date to the input and output tables. The storage account name and all the required date components for the partitiones will be passed as parameters by the Hive action running in the Data Factory.
 
 
-1. Open the file located in **Setup\Assets\HDInsight\Scripts\productcatalog.hql** and review its content:
+1. Open the file located in **Setup\Assets\HDInsight\Scripts\4_productcatalog.hql** and review its content:
 
 	````SQL
 	DROP TABLE IF EXISTS RawProductCatalog;
 	CREATE EXTERNAL TABLE RawProductCatalog (
 		jsonentry string
-	) STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/productcatalog/"
+	) STORED AS TEXTFILE LOCATION "wasb://partsunlimited@<StorageAccountName>.blob.core.windows.net/productcatalog/";
 	
 
 	DROP TABLE IF EXISTS ProductCatalog;
 	CREATE TABLE ProductCatalog ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
-	LOCATION 'wasbs://processeddata@<Azure storage account name>.blob.core.windows.net/product_catalog/'
+	LOCATION 'wasbs://processeddata@<StorageAccountName>.blob.core.windows.net/product_catalog/'
 	AS SELECT get_json_object(jsonentry, "$.skuNumber") as skuNumber,
 			  get_json_object(jsonentry, "$.id") as id,
 			  get_json_object(jsonentry, "$.productId") as productId,
@@ -395,67 +468,71 @@ In this task, we'll create our hive scripts to process out data. This is used to
 			  get_json_object(jsonentry, "$.title") as title,
 			  get_json_object(jsonentry, "$.price") as price,
 			  get_json_object(jsonentry, "$.salePrice") as salePrice,
-			  get_json_object(jsonentry, "$.costPrice") as costPrice,
-			  get_json_object(jsonentry, "$.productArtUrl") as productArtUrl,
-			  get_json_object(jsonentry, "$.description") as description,
-			  get_json_object(jsonentry, "$.productDetails") as productDetails
+			  get_json_object(jsonentry, "$.costPrice") as costPrice
 	FROM RawProductCatalog;
 	````
 
 
 <a name="Ex1Task3"></a>
-#### Task 3 (Optional) - Create the HQL script to process the raw data ####
+#### Task 3 - Create the HQL queries to process the raw data ####
 1. First, let's start by getting used to the simple HiveQL language. Let's run a query to compute the top-selling products for the day.
 
 	````SQL
-	SELECT productid, SUM(quantity)
-	FROM websiteActivity
-	WHERE eventdate = from_unixtime(unix_timestamp())
-	GROUP BY productid;
+	select count(*) from webisteActivity;
+
+	select productid, SUM(quantity) as qty from websiteActivity 
+	WHERE eventdate < from_unixtime(unix_timestamp())
+	AND type='checkout'
+	GROUP BY productid
+	ORDER BY qty DESC;
 	````
 
 1. We can see how easy it is to run a SQL-like query using HiveQL. We can easily join this data to the product catalog data and understand our top selling categories as well. The HiveQL query below does exactly that.
 
 	````SQL
 	SELECT a.productid, b.title, b.categoryName, SUM(a.quantity)
-	FROM websiteActivity a LEFT OUTER JOIN RawProductCatalog b
+	FROM websiteActivity a LEFT OUTER JOIN ProductCatalog b
 	ON a.productid = b.productid
-	WHERE eventdate = from_unixtime(unix_timestamp())
-	GROUP BY productid;
+	WHERE eventdate < from_unixtime(unix_timestamp())
+	AND type='checkout'
+	GROUP BY a.productid, b.title, b.categoryName;
 	````
 
-1. Next, we'll be processing some data using HiveQL. In this scenario, we will process our log data and understand which products get bought together. This will help us understand our audience a little better and come up with better marketing strategies for our e-commerce store. This is used to highlight the ease and ability of a NoSQL ETL engine like Hadoop to work with Arrays within tabular formatted data.
+1. (Optional) Next, we'll be processing some data using HiveQL. In this scenario, we will process our log data and understand which products get bought together. This will help us understand our audience a little better and come up with better marketing strategies for our e-commerce store. This is used to highlight the ease and ability of a NoSQL ETL engine like Hadoop to work with Arrays within tabular formatted data.
 
-The code can be found in **Setup\Assets\HDInsight\Scripts\relatedproducts.hql**
+The code can be found in **Setup\Assets\HDInsight\Scripts\5_relatedproducts.hql**
 
 	````SQL
 	DROP VIEW IF EXISTS unique_purchases;
-	CREATE VIEW unique_products AS 
+	CREATE VIEW unique_purchases AS 
 	SELECT distinct userid, productid
 	FROM websiteActivity where eventdate > date_sub(from_unixtime(unix_timestamp()),30)
 	AND type = 'checkout';
 
 	DROP VIEW IF EXISTS all_purchased_products;
 	CREATE VIEW all_purchased_products AS 
-	SELECT a.userid, COLLECT_LIST(a.productid,'\;',a.qty) as product_list from
-	(SELECT userid, productid, sum(quantity) as qty websiteActivity
-	WHERE where eventdate > date_sub(from_unixtime(unix_timestamp()),30)
-	AND type = 'checkout'
-	ORDER BY userid ASC, qty DESC) a;
+	SELECT a.userid, COLLECT_LIST(CONCAT(a.productid,',',a.qty)) as product_list from (
+  	 SELECT userid, productid, sum(quantity) as qty FROM websiteActivity
+   	 WHERE eventdate > date_sub(from_unixtime(unix_timestamp()),30)
+   	 AND type = 'checkout'
+   	 GROUP BY userid, productid
+   	 ORDER BY userid ASC, qty DESC) a
+	GROUP BY a.userid;
 
 	DROP VIEW IF EXISTS related_purchase_list;
-	CREATE VIEW related_purchases AS
+	CREATE VIEW related_purchase_list AS
 	SELECT a.userid, a.productid, b.product_list
 	FROM unique_purchases a LEFT OUTER JOIN all_purchased_products b ON (a.userid = b.userid);
 
-	DROP TABLE IF EXISTS related_purchases;
-	CREATE TABLE related_purchases ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' LOCATION 'wasbs://processeddata@<Azure storage account name>.blob.core.windows.net/related_purchases/' AS 
-	SELECT a.productid, a.related_product, a.quantity, rank() OVER (PARTITION BY a.productid ORDER BY a.quantity DESC) as rank FROM
-	(SELECT productid, SPLIT(product_list, '\;')[0] as related_product, CAST(SPLIT(product_list, '\;')[1] as INT) as quantity
-	FROM related_purchase_list LATERAL VIEW EXPLODE(product_list) prodList as product_list) a
+	DROP TABLE IF EXISTS related_products;
+	CREATE TABLE related_products ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' LOCATION 'wasbs://processeddata@<StorageAccountName>.blob.core.windows.net/related_products/' AS 
+	SELECT c.productid, c.related_product, c.qty, rank() OVER (PARTITION BY c.productid ORDER BY c.qty DESC) as rank FROM
+	(SELECT a.productid, a.related_product, SUM(a.quantity) as qty FROM
+	(SELECT b.productid, SPLIT(prod_list, ',')[0] as related_product, CAST(SPLIT(prod_list, ',')[1] as INT) as quantity
+	FROM related_purchase_list b LATERAL VIEW EXPLODE(b.product_list) prodList as prod_list) a
 	WHERE a.productid <> a.related_product
-	GROUP BY a.productid
-	ORDER BY productid ASC, rank DESC;
+	GROUP BY a.productid, a.related_product
+	ORDER BY a.productid ASC, qty DESC) c;
 	````
 
 1. Now that we have the related purchases, we can use this information to power recommendations on our e-commerce website. We can move the output of this table to a transactional data store, where our web app can pick up the latest data to power the recommendations.
@@ -533,7 +610,7 @@ All scripts for this exercise are available in the folder Module2-GainInsights\S
 	CREATE EXTERNAL FILE FORMAT TextFile
 	WITH (
 	    FORMAT_TYPE = DelimitedText,
-	    FORMAT_OPTIONS (FIELD_TERMINATOR = '|')
+	    FORMAT_OPTIONS (FIELD_TERMINATOR = ',')
 	);
 	````
 
@@ -552,17 +629,17 @@ Now let's create the external tables. All we are doing here is defining column n
 
 1. Open a query window and execute the following SQL to create the external table.  Notice the WITH clause is using the data source and file format created in the previous task.
 	````SQL
-	CREATE EXTERNAL TABLE asb.WebisteActivityExternal
+	CREATE EXTERNAL TABLE asb.WebsiteActivityExternal
 	(
-		EventDate int,
+		EventDate datetime2,
 		UserID nvarchar(20),
 		Type nvarchar(20),
 		ProductID nvarchar(20), 
 		Quantity int, 
-		Price decimal
+		Price float
 	)
 	WITH (
-	    LOCATION='/structuredlogs/2016/07/',
+	    LOCATION='/structuredlogs/2016/10/',
 	    DATA_SOURCE=AzureStorage,
 	    FILE_FORMAT=TextFile
 	);
@@ -574,16 +651,13 @@ Now let's create the external tables. All we are doing here is defining column n
 	(
 		SkuNumber nvarchar(50),
 		Id int,
-		ProductID nvcarchar(20),
-		CategoryID nvcarchar(20),
+		ProductID nvarchar(20),
+		CategoryID nvarchar(20),
 		CategoryName nvarchar(100),
-		Title nvcarchar(100),
-		Price decimal,
-		SalePrice decimal,
-		CostPrice decimal,
-		ProductArtUrl nvcarchar(max),
-		Description nvcarchar(max),
-		ProductDetails nvcarchar(max)
+		Title nvarchar(100),
+		Price float,
+		SalePrice float,
+		CostPrice float
 	)
 	WITH (
 	    LOCATION='/product_catalog/',
@@ -600,10 +674,8 @@ Now let's create the external tables. All we are doing here is defining column n
 	SELECT
 		ProductID,
 		SUM(CASE WHEN Type = 'view' THEN Quantity ELSE 0 END) AS ProdViews,
-		SUM(CASE WHEN Type = 'add' THEN Quantity ELSE 0 END) AS ProdAdds,
-		SUM(CASE WHEN Type = 'checkout' THEN Quantity ELSE 0 END) AS ProdBuys
+		SUM(CASE WHEN Type = 'add' THEN Quantity ELSE 0 END) AS ProdAdds
 	FROM asb.WebsiteActivityExternal
-	WHERE 
 	GROUP BY ProductID;
 	````
 
@@ -625,18 +697,12 @@ The easiest and most efficient way to load data from Azure blob storage is to us
 1. Execute the following in a query window to create a new partitioned table.  Note this table will be created based on a SELECT statement issued on the external table. 
 
 	````SQL
-	IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'adw' AND TABLE_NAME = 'FactWebsiteActivity')
 	CREATE TABLE adw.FactWebsiteActivity
 	WITH (
 		CLUSTERED COLUMNSTORE INDEX,
-		DISTRIBUTION = HASH(ProductID),
-	    PARTITION   (   EventDate RANGE RIGHT FOR VALUES
-	                   ( 20160704, 20160705, 20160706)
-	                    )
+		DISTRIBUTION = HASH(ProductID)
 		)
-	GO
-
-	INSERT INTO TABLE adw.FactWebsiteActivity
+	AS
 	SELECT
 		EventDate,
 		UserID,
@@ -644,8 +710,7 @@ The easiest and most efficient way to load data from Azure blob storage is to us
 		ProductID, 
 		Quantity, 
 		Price
-	FROM asb.ProductLogExternal
-	WHERE Type='checkout'
+	FROM asb.WebsiteActivityExternal
 	GO
 	````
 
@@ -653,7 +718,7 @@ The easiest and most efficient way to load data from Azure blob storage is to us
 
 	````SQL
 	IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'adw' AND TABLE_NAME = 'DimProductCatalog')
-	DROP TABLE adw.DimProductCatalog
+		DROP TABLE adw.DimProductCatalog
 	GO
 
 	CREATE TABLE adw.DimProductCatalog
@@ -671,10 +736,7 @@ The easiest and most efficient way to load data from Azure blob storage is to us
 		title,
 		price,
 		salePrice,
-		costPrice,
-		productArtUrl,
-		description,
-		productDetails
+		costPrice
 	FROM asb.ProductCatalogExternal
 	GO
 	````
@@ -683,11 +745,11 @@ The easiest and most efficient way to load data from Azure blob storage is to us
 1. Azure SQL Data Warehouse does not automatically manage your statistics.  It is a good practice to create single column statistics on your internally managed tables immediately after a load. There are some choices for statistics. For example, if you create single-column statistics on every column it might take a long time to rebuild statistics. If you know certain columns are not going to be in query predicates, you could skip creating statistics on those columns. For instance, you'll notice that we have not done statistics on the 'UserID' column, because we will not be using it for our query.
 
 	````SQL	
-	CREATE STATISTICS Stat_adw_FactWebsiteActivity_EventDate on adw.FactProductLog(EventDate);
-	CREATE STATISTICS Stat_adw_FactWebsiteActivity_Type on adw.FactProductLog(Type);
-	CREATE STATISTICS Stat_adw_FactWebsiteActivity_ProductID on adw.FactProductLog(ProductID);
-	CREATE STATISTICS Stat_adw_FactWebsiteActivity_Quantity on adw.FactProductLog(Quantity);
-	CREATE STATISTICS Stat_adw_FactWebsiteActivity_Price on adw.FactProductLog(Price);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_EventDate on adw.FactWebsiteActivity(EventDate);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_Type on adw.FactWebsiteActivity([Type]);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_ProductID on adw.FactWebsiteActivity(ProductID);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_Quantity on adw.FactWebsiteActivity(Quantity);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_Price on adw.FactWebsiteActivity(Price);
 	````
 
 <a name="Ex2Task5"></a>
@@ -698,33 +760,35 @@ Before we move to the next exercise, create a stored procedure to understand our
 1. Execute the following statement to create the summary table and table statistics.
 	````SQL	
 
-	CREATE PROCEDURE adw.asp_populate_ProfitableProducts AS
-	BEGIN
-	IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'adw' AND TABLE_NAME = 'ProfitableProducts')
-	DROP TABLE adw.ProfitableProducts
+	IF EXISTS(SELECT * FROM sys.procedures WHERE name = 'asp_populate_productlogsummary')
+		DROP PROCEDURE adw.asp_populate_productlogsummary
 	GO
 
-	CREATE TABLE adw.ProfitableProducts 
-	WITH
-	(   
-	    CLUSTERED COLUMNSTORE INDEX,
-	    DISTRIBUTION = ROUND_ROBIN
-	)
-	AS
-	SELECT 
-		a.ProductId, 
-		b.CategoryName,
-		SUM(a.Price - (b.CostPrice*a.Quantity)) as Profit
-	FROM adw.FactWebsiteActivity AS a LEFT OUTER JOIN adw.DimProductCatalog AS b
-		ON a.ProductId = b.ProductId
-	WHERE a.eventdate > DATEDIFF(day, 30, GetDate())
-	GROUP BY ProductId, a.CategoryName
-	ORDER BY Profit DESC, a.ProductId ASC;
+	CREATE PROCEDURE adw.asp_populate_ProfitableProducts AS
+		IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'adw' AND TABLE_NAME = 'ProfitableProducts')
+			DROP TABLE adw.ProfitableProducts
+
+		CREATE TABLE adw.ProfitableProducts
+		WITH
+		(   
+			CLUSTERED COLUMNSTORE INDEX,
+			DISTRIBUTION = ROUND_ROBIN
+		)
+		AS
+		SELECT 
+			a.ProductId, 
+			b.CategoryName,
+			SUM(a.Price - (b.CostPrice*a.Quantity)) as Profit
+		FROM adw.FactWebsiteActivity AS a LEFT OUTER JOIN adw.DimProductCatalog AS b
+			ON a.ProductId = b.ProductId
+		WHERE  DATEDIFF(day, a.eventdate, GetDate()) < 30
+		AND a.[Type]='checkout'
+		GROUP BY a.ProductId, b.CategoryName;
 
 	
-	CREATE STATISTICS Stat_adw_ProfitableProducts_ProductId on adw.ProfitableProducts(ProductId);
-	CREATE STATISTICS Stat_adw_ProfitableProducts_CategoryName on adw.ProfitableProducts(CategoryName);
-	END
+		CREATE STATISTICS Stat_adw_ProfitableProducts_ProductId on adw.ProfitableProducts(ProductId);
+		CREATE STATISTICS Stat_adw_ProfitableProducts_CategoryName on adw.ProfitableProducts(CategoryName);
+		CREATE STATISTICS Stat_adw_ProfitableProducts_Profit on adw.ProfitableProducts(Profit);
 	GO
 	````
 
@@ -931,7 +995,7 @@ In this task, you'll create the input and output tables corresponding to the lin
 	"external": true
 	````
 
-    The final _LogJsonFromBlob_ dataset should look like the following snippet:
+    The final _RawJsonData_ dataset should look like the following snippet:
     
 	````JavaScript
 	{
@@ -1034,7 +1098,7 @@ In this task, you'll create the input and output tables corresponding to the lin
 				"structure": [
 					{
 						"name": "eventdate",
-						"type": "String"
+						"type": "DateTime"
 					},
 					{
 						"name": "userid",
@@ -1066,7 +1130,8 @@ In this task, you'll create the input and output tables corresponding to the lin
 					 { "name": "Day", "value": { "type": "DateTime", "date": "SliceStart", "format": "dd" } }
 					],
 					"format": {
-						"type": "TextFormat"
+						"type": "TextFormat",
+						"columnDelimiter": ","
 					}
 				},
 				"availability": {
@@ -1081,7 +1146,8 @@ In this task, you'll create the input and output tables corresponding to the lin
 
  1. (Optional) Finally, let's create a raw and structured dataset for the Product Catalog data. Following the steps laid out in the previous steps, our dataset should look as follows. Do not forget to mark this dataset as external.
  	
->**Note:** This step is optional since we've already added the Product Catalog data to the SQL DW database. 
+>**Note:** This step is optional since we've already added the Product Catalog data to the SQL DW database during our earlier exercise. 
+
  		````JavaScript
 		{
 			"name": "RawProductCatalogBlob",
@@ -1103,7 +1169,7 @@ In this task, you'll create the input and output tables corresponding to the lin
 		}
 		````
 
- 1. Here's what the Structured Dataset would look like.
+ 1. (Optional) Here's what the Structured Dataset would look like.
 
 	````JavaScript
 		{
@@ -1147,18 +1213,6 @@ In this task, you'll create the input and output tables corresponding to the lin
 					{
 						"name": "costPrice",
 						"type": "Double"
-					},
-					{
-						"name": "productArtUrl",
-						"type": "String"
-					},
-					{
-						"name": "description",
-						"type": "String"
-					},
-					{
-						"name": "productDetails",
-						"type": "String"
 					}			
 				],
 				"typeProperties": {
@@ -1238,7 +1292,7 @@ In this task, you'll create the input and output tables corresponding to the lin
 				"structure": [
 					{
 						"name": "EventDate",
-						"type": "Int32"
+						"type": "Datetime"
 					},
 					{
 						"name": "UserId",
@@ -1320,18 +1374,6 @@ In this task, you'll create the input and output tables corresponding to the lin
 					{
 						"name": "costPrice",
 						"type": "Double"
-					},
-					{
-						"name": "productArtUrl",
-						"type": "String"
-					},
-					{
-						"name": "description",
-						"type": "String"
-					},
-					{
-						"name": "productDetails",
-						"type": "String"
 					}			
 				],
 				"typeProperties": {
@@ -1403,7 +1445,7 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 
 1. Set the **end** date to be tomorrow (for instance: "2016-10-20T00:00:00Z").
 
-1. Add a Hive activity to run the "addpartitions.hql" script located in the storage at "partsunlimited\Scripts\addpartitions.hql" and pass the slice date components as parameters. Make sure to replace the **<****StorageAccountName****>** placeholder with the storage account name:
+1. Add a Hive activity to run the "3_addpartitions.hql" script located in the storage at "partsunlimited\Scripts\addpartitions.hql" and pass the slice date components as parameters. Make sure to replace the **<****StorageAccountName****>** placeholder with the storage account name:
 
 	````JavaScript
 	"activities": [
@@ -1412,7 +1454,7 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 			 "type": "HDInsightHive",
 			 "linkedServiceName": "HDInsightLinkedService",
 			 "typeProperties": {
-				  "scriptPath": "partsunlimited\\Scripts\\addpartitions.hql",
+				  "scriptPath": "partsunlimited\\Scripts\\3_addpartitions.hql",
 				  "scriptLinkedService": "AzureStorageLinkedService",
 				  "defines": {
 				      "StorageAccountName": "<StorageAccountName>",
@@ -1437,7 +1479,7 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 
 	This activity will run the **addpartitions.hql** script to create the date partition corresponding to the current slice.
 
-1. Add another Hive activity to run the "structuredlogs.hql" script located in the storage at "partsunlimited\Scripts\structuredlogs.hql" and pass the slice date components as parameters:
+1. Add another Hive activity to run the "2_structuredlogs.hql" script located in the storage at "partsunlimited\Scripts\structuredlogs.hql" and pass the slice date components as parameters:
 
 	````JavaScript
 	"activities": [
@@ -1449,7 +1491,7 @@ An _HDInsight Hive activity_ executes Hive queries on a _HDInsight_ cluster.
 			 "type": "HDInsightHive",
 			 "linkedServiceName": "HDInsightLinkedService",
 			 "typeProperties": {
-				  "scriptPath": "partsunlimited\\Scripts\\structuredlogs.hql",
+				  "scriptPath": "partsunlimited\\Scripts\\2_structuredlogs.hql",
 				  "scriptLinkedService": "AzureStorageLinkedService",
 				  "defines": {
 				      "Year": "$$Text.Format('{0:yyyy}', SliceStart)",
@@ -1491,7 +1533,7 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
 
 1. Set the **end** date to be tomorrow.
 
-1. (Optional) Let's first create a Copy activity to move the Product Catalog data from Blob Storage to SQL DW. 
+1. (Optional) Let's first create a Copy activity to move the Product Catalog data from Blob Storage to SQL DW. Notice in the _Sink_ section, how Polybase has been used to copy the data to SQL Data Warehouse.
 	````JavaScript
 	"activities": [
 		{
@@ -1502,7 +1544,16 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
 					"type": "BlobSource"
 				},
 				"sink": {
-					"type": "SqlDWSink"	
+					"type": "SqlDWSink",
+					"allowPolyBase": true,	
+					"polyBaseSettings":
+				    {
+				        "rejectType": "percentage",
+				        "rejectValue": 10.0,
+				        "rejectSampleValue": 100,
+				        "useTypeDefault": true 
+				    }
+
 				}
 			},
 			"inputs": [
@@ -1524,7 +1575,7 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
 	
 	````
 
-1. Add a Move activity to move the generated tabular blobs to the SQL Data Warehouse.
+1. Add a Move activity to move the generated tabular blobs to the SQL Data Warehouse. Notice in the _Sink_ section, how Polybase has been used to copy the data to SQL Data Warehouse.
 
 	````JavaScript
 	"activities": [
@@ -1537,7 +1588,15 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
 				},
 				"sink": {
 					"type": "SqlDWSink",
-					"sqlWriterStoredProcedureName": "adw.asp_populate_ProfitableProducts"
+					"sqlWriterStoredProcedureName": "adw.asp_populate_ProfitableProducts",
+					"allowPolyBase": true,	
+					"polyBaseSettings":
+				    {
+				        "rejectType": "percentage",
+				        "rejectValue": 10.0,
+				        "rejectSampleValue": 100,
+				        "useTypeDefault": true 
+				    }
 				}
 			},
 			"inputs": [

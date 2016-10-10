@@ -3,31 +3,51 @@
 CREATE SCHEMA [adw]
 GO
 
-CREATE TABLE adw.FactProductLog
-WITH (
-	CLUSTERED COLUMNSTORE INDEX,
-	DISTRIBUTION = HASH(ProductID),
-    PARTITION   (   LogDate RANGE RIGHT FOR VALUES
-                   ( 20160704, 20160705, 20160706)
-                    )
-	)
-AS 
-SELECT
-	LogDate,
-	ProductID,
-	Title, 
-	Category,
-	ProdType,
-	TotalClicked
-FROM asb.ProductLogExternal
-GO
+CREATE TABLE adw.FactWebsiteActivity
+	WITH (
+		CLUSTERED COLUMNSTORE INDEX,
+		DISTRIBUTION = HASH(ProductID)
+		)
+	AS
+	SELECT
+		EventDate,
+		UserID,
+		Type,
+		ProductID, 
+		Quantity, 
+		Price
+	FROM asb.WebsiteActivityExternal
+	GO
 
-CREATE STATISTICS Stat_adw_FactProductLog_LogDate on adw.FactProductLog(LogDate) WITH FULLSCAN;
-CREATE STATISTICS Stat_adw_FactProductLog_ProductID on adw.FactProductLog(ProductID);
-CREATE STATISTICS Stat_adw_FactProductLog_category on adw.FactProductLog(Category);
-CREATE STATISTICS Stat_adw_FactProductLog_title on adw.FactProductLog(Title);
-CREATE STATISTICS Stat_adw_FactProductLog_prodtype on adw.FactProductLog(ProdType);
-CREATE STATISTICS Stat_adw_FactProductLog_totalclicked on adw.FactProductLog(TotalClicked);
+IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA = 'adw' AND TABLE_NAME = 'DimProductCatalog')
+		DROP TABLE adw.DimProductCatalog
+	GO
+
+	CREATE TABLE adw.DimProductCatalog
+	WITH (
+		CLUSTERED COLUMNSTORE INDEX,
+		DISTRIBUTION = HASH(ProductID)
+		)
+	AS 
+	SELECT
+		skuNumber,
+		id,
+		productId,
+		categoryId,
+		categoryName,
+		title,
+		price,
+		salePrice,
+		costPrice
+	FROM asb.ProductCatalogExternal
+	GO
+	
+	
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_EventDate on adw.FactWebsiteActivity(EventDate);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_Type on adw.FactWebsiteActivity([Type]);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_ProductID on adw.FactWebsiteActivity(ProductID);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_Quantity on adw.FactWebsiteActivity(Quantity);
+	CREATE STATISTICS Stat_adw_FactWebsiteActivity_Price on adw.FactWebsiteActivity(Price);
 
 /*
 -- View the distribution of rows across the partitions

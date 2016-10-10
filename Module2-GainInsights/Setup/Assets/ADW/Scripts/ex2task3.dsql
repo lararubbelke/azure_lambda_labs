@@ -5,32 +5,52 @@
 CREATE SCHEMA [asb]
 GO
 
-CREATE EXTERNAL TABLE asb.ProductLogExternal
-(
-	LogDate int,
-	ProductID int, 
-	Title nvarchar(50), 
-	Category nvarchar(50), 
-	ProdType nvarchar(10), 
-	TotalClicked int
-)
-WITH (
-    LOCATION='/processedlogs/2016/07/',
-    DATA_SOURCE=AzureStorage,
-    FILE_FORMAT=TextFile
-);
+CREATE EXTERNAL TABLE asb.WebsiteActivityExternal
+	(
+		EventDate datetime2,
+		UserID nvarchar(20),
+		Type nvarchar(20),
+		ProductID nvarchar(20), 
+		Quantity int, 
+		Price float
+	)
+	WITH (
+	    LOCATION='/structuredlogs/2016/10/',
+	    DATA_SOURCE=AzureStorage,
+	    FILE_FORMAT=TextFile
+	);
 GO
 
--- Run a query on the external table
-/*
-SELECT COUNT(*) FROM asb.ProductLogExternal;
 
-SELECT
-	LogDate,
-	Category,
-	Title,
-	SUM(CASE WHEN prodtype = 'view' THEN TotalClicked ELSE 0 END) AS ProdViews,
-	SUM(CASE WHEN prodtype = 'add' THEN TotalClicked ELSE 0 END) AS ProdAdds
-FROM asb.ProductLogExternal 
-GROUP BY LogDate, Title, Category
-*/
+CREATE EXTERNAL TABLE asb.ProductCatalogExternal
+	(
+		SkuNumber nvarchar(50),
+		Id int,
+		ProductID nvarchar(20),
+		CategoryID nvarchar(20),
+		CategoryName nvarchar(100),
+		Title nvarchar(100),
+		Price float,
+		SalePrice float,
+		CostPrice float
+	)
+	WITH (
+	    LOCATION='/product_catalog/',
+	    DATA_SOURCE=AzureStorage,
+	    FILE_FORMAT=TextFile
+	);
+GO
+
+
+-- Run a query on the external table
+SELECT COUNT(*) FROM asb.WebsiteActivityExternal;
+GO
+
+
+	SELECT
+		ProductID,
+		SUM(CASE WHEN Type = 'view' THEN Quantity ELSE 0 END) AS ProdViews,
+		SUM(CASE WHEN Type = 'add' THEN Quantity ELSE 0 END) AS ProdAdds
+	FROM asb.WebsiteActivityExternal
+	GROUP BY ProductID;
+GO

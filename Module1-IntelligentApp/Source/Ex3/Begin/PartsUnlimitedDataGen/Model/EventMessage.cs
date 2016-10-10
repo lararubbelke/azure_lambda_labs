@@ -6,7 +6,7 @@
         public string UserId { get; set; }
         public string Type { get; set; }
 
-        public int ProductId { get; set; }
+        public string ProductId { get; set; }
         public int quantity { get; set; }
 
         public decimal Price { get; set; } 

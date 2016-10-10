@@ -22,7 +22,7 @@ WITH
 CREATE EXTERNAL DATA SOURCE AzureStorage
 WITH (
     TYPE = HADOOP,
-    LOCATION = 'wasbs://dwdata@<Azure storage account name>.blob.core.windows.net',
+    LOCATION = 'wasbs://processeddata@<Azure storage account name>.blob.core.windows.net',
     CREDENTIAL = AzureStorageCredential
 );
 
@@ -35,5 +35,5 @@ WITH (
 CREATE EXTERNAL FILE FORMAT TextFile
 WITH (
     FORMAT_TYPE = DelimitedText,
-    FORMAT_OPTIONS (FIELD_TERMINATOR = '|')
+    FORMAT_OPTIONS (FIELD_TERMINATOR = ',')
 );

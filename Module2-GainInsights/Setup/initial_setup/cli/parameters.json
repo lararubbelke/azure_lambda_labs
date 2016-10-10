@@ -5,7 +5,7 @@
     "hdiClusterNamePrefix":{
         "value":"hdiprecon"
     },
-    "hdiClusterSuffix":{
+    "uniqueSuffix":{
         "value":"10"
     },
     "clusterLoginUserName": {

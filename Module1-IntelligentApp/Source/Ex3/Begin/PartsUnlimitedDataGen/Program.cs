@@ -152,7 +152,7 @@
                         EventDate = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                         UserId = userId,
                         Type = randomEventType,
-                        ProductId = randomProduct.ProductId,
+                        ProductId = randomProduct.ProductId.ToString(),
                         quantity = qty,
                         Price = (randomProduct.SalePrice * qty)
                     };
@@ -164,7 +164,7 @@
                         EventDate = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                         UserId = userId,
                         Type = randomEventType,
-                        ProductId = randomProduct.ProductId
+                        ProductId = randomProduct.ProductId.ToString()
                     };
                 }
 

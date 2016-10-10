@@ -6,10 +6,10 @@
         "type":"string",
         "defaultValue":"hdiprecon"
     },
-    "hdiClusterSuffix":{
+    "uniqueSuffix":{
         "type":"string",
         "metadata":{
-            "description": "The name of the HDInsight cluster to create."
+            "description": "The suffix name of the HDInsight cluster to create."
         }
     },
     "clusterLoginUserName": {
@@ -109,9 +109,9 @@
 "variables":{
     "defaultApiVersion": "2015-05-01-preview",
     "clusterApiVersion": "2015-03-01-preview",
-    "clusterStorageAccountName": "[concat(parameters('storageAccountSubName'),int(parameters('hdiClusterSuffix')))]", 
-    "sqlServerName":"[concat(parameters('sqlServerSubName'),int(parameters('hdiClusterSuffix')))]",
-    "hdiClusterName":"[concat(parameters('hdiClusterNamePrefix'),int(parameters('hdiClusterSuffix')))]"
+    "clusterStorageAccountName": "[concat(parameters('storageAccountSubName'),parameters('uniqueSuffix'))]", 
+    "sqlServerName":"[concat(parameters('sqlServerSubName'),parameters('uniqueSuffix'))]",
+    "hdiClusterName":"[concat(parameters('hdiClusterNamePrefix'),parameters('uniqueSuffix'))]"
 },
 "resources":
 [
