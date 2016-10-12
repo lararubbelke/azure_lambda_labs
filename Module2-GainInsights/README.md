@@ -148,7 +148,7 @@ In this section you will create a new storage account, and load sample data that
 1. Drag the 'Scripts' folder to the Storage explorer client and drop it into the 'partsunlimited' container.
 
 
-You should now have sample data and a new storage account with four blob containers. 
+You should now have sample data and a new storage account with three blob containers. 
 
 - The partsunlimited blob container should contain the raw logs data, the productcatalog data and scripts folders. 
 - The processeddata container should be empty, as it will be populated during the Azure Data Factory lab.
