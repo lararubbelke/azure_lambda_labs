@@ -1154,9 +1154,9 @@ In this task, you'll create the input and output tables corresponding to the lin
 
  1. (Optional) Finally, let's create a raw and structured dataset for the Product Catalog data. Following the steps laid out in the previous steps, our dataset should look as follows. Do not forget to mark this dataset as external.
  	
->**Note:** This step is optional since we've already added the Product Catalog data to the SQL DW database during our earlier exercise. 
+	>**Note:** This step is optional since we've already added the Product Catalog data to the SQL DW database during our earlier exercise. 
 
-	````JavaScript
+		````JavaScript
 		{
 			"name": "RawProductCatalogBlob",
 			"properties": {
@@ -1175,7 +1175,8 @@ In this task, you'll create the input and output tables corresponding to the lin
 				"external": true
 			}
 		}
-	````
+
+		````
 
  1. (Optional) Here's what the Structured Dataset would look like.
 
