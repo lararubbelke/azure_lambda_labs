@@ -130,23 +130,27 @@ In this section you will create a new storage account, and load sample data that
 
 	> _Add an Account_
 
-1. Create mew blob containers by right clicking on the storage account name and clicking 'Create Blob Container'.
+1. Create new blob containers by right clicking on the storage account name and clicking 'Create Blob Container'.
 
-1. Create the following three containers:
+1. Create the following two containers:
 	1. partsunlimited
 	1. processeddata
 
 1. Verify the three new Blob Containers exist. 
-	1. In _Azure Storage Explorer_ expand your account and expand **Blob Containers** to verify containers with the name **partsunlimited** & **processeddata**
+	1. In _Azure Storage Explorer_ expand your account and expand **Blob Containers** to verify two new containers with the name **partsunlimited** & **processeddata** were created. A separate container for the HDInsight cluster will also be present. 
 
-1. Switch back to your repository and make your way to the folder path: Module2-GainInsights\Setup\Assets.
+1. Switch back to your repository and navigate to the folder path: Module2-GainInsights\Setup\Assets.
 
 1. Drag the 'logs' and the 'productcatalog' folder to the Storage explorer client and drop it into the 'partsunlimited' container.
+
+1. Switch back to your repository and navigate to the folder path: Module2-GainInsights\Setup\Assets\HDInsight.
+
+1. Drag the 'Scripts' folder to the Storage explorer client and drop it into the 'partsunlimited' container.
 
 
 You should now have sample data and a new storage account with four blob containers. 
 
-- The partsunlimited blob container should contain the raw logs data and scripts folders. 
+- The partsunlimited blob container should contain the raw logs data, the productcatalog data and scripts folders. 
 - The processeddata container should be empty, as it will be populated during the Azure Data Factory lab.
 - The <clusterName> container which will be the same name as your HDInsight Cluster
 
@@ -448,7 +452,7 @@ In this task, we'll create our hive scripts to process out data. This is used to
     This script adds the partitiones by date to the input and output tables. The storage account name and all the required date components for the partitiones will be passed as parameters by the Hive action running in the Data Factory.
 
 
-1. Open the file located in **Setup\Assets\HDInsight\Scripts\4_productcatalog.hql** and review its content:
+1. Open the file located in **Setup\Assets\HDInsight\Scripts\4_productcatalog.hql**,  Review the content and execute in the Ambari query tool:
 
 	````SQL
 	DROP TABLE IF EXISTS RawProductCatalog;
@@ -478,7 +482,7 @@ In this task, we'll create our hive scripts to process out data. This is used to
 1. First, let's start by getting used to the simple HiveQL language. Let's run a query to compute the top-selling products for the day.
 
 	````SQL
-	select count(*) from webisteActivity;
+	select count(*) from websiteActivity;
 
 	select productid, SUM(quantity) as qty from websiteActivity 
 	WHERE eventdate < from_unixtime(unix_timestamp())
@@ -498,9 +502,7 @@ In this task, we'll create our hive scripts to process out data. This is used to
 	GROUP BY a.productid, b.title, b.categoryName;
 	````
 
-1. Next, we'll be processing some data using HiveQL. In this scenario, we will process our log data and understand which products get bought together. This will help us understand our audience a little better and come up with better marketing strategies for our e-commerce store. This is used to highlight the ease and ability of a NoSQL ETL engine like Hadoop to work with Arrays within tabular formatted data.
-
-The code can be found in **Setup\Assets\HDInsight\Scripts\5_relatedproducts.hql**
+1. Next, we'll be processing some data using HiveQL. In this scenario, we will process our log data and understand which products get bought together. This will help us understand our audience a little better and come up with better marketing strategies for our e-commerce store. This is used to highlight the ease and ability of a NoSQL ETL engine like Hadoop to work with Arrays within tabular formatted data.  The code can be found in **Setup\Assets\HDInsight\Scripts\5_relatedproducts.hql**
 
 	````SQL
 	DROP VIEW IF EXISTS unique_purchases;
@@ -512,11 +514,11 @@ The code can be found in **Setup\Assets\HDInsight\Scripts\5_relatedproducts.hql*
 	DROP VIEW IF EXISTS all_purchased_products;
 	CREATE VIEW all_purchased_products AS 
 	SELECT a.userid, COLLECT_LIST(CONCAT(a.productid,',',a.qty)) as product_list from (
-  	 SELECT userid, productid, sum(quantity) as qty FROM websiteActivity
-   	 WHERE eventdate > date_sub(from_unixtime(unix_timestamp()),30)
-   	 AND type = 'checkout'
-   	 GROUP BY userid, productid
-   	 ORDER BY userid ASC, qty DESC) a
+	  	 SELECT userid, productid, sum(quantity) as qty FROM websiteActivity
+	   	 WHERE eventdate > date_sub(from_unixtime(unix_timestamp()),30)
+	   	 AND type = 'checkout'
+	   	 GROUP BY userid, productid
+	   	 ORDER BY userid ASC, qty DESC) a
 	GROUP BY a.userid;
 
 	DROP VIEW IF EXISTS related_purchase_list;
@@ -628,6 +630,7 @@ Now let's create the external tables. All we are doing here is defining column n
 	````
 
 1. Open a query window and execute the following SQL to create the external table.  Notice the WITH clause is using the data source and file format created in the previous task.
+
 	````SQL
 	CREATE EXTERNAL TABLE asb.WebsiteActivityExternal
 	(
@@ -643,10 +646,12 @@ Now let's create the external tables. All we are doing here is defining column n
 	    DATA_SOURCE=AzureStorage,
 	    FILE_FORMAT=TextFile
 	);
+
 	````
 
 1. Let's create another table to load the Product Catalog into SQL DW so that we can perform some meaningful analytics like understanding our most profitable products the last 30 days, so that we can promote them further.
 
+	````SQL
 	CREATE EXTERNAL TABLE asb.ProductCatalogExternal
 	(
 		SkuNumber nvarchar(50),
@@ -664,9 +669,10 @@ Now let's create the external tables. All we are doing here is defining column n
 	    DATA_SOURCE=AzureStorage,
 	    FILE_FORMAT=TextFile
 	);
+
 	````
 
-1. Now that the external table has been created, let's run a couple of sample queries to get used to the SQL DW environment. Notice how you query the external table as you would any other table in the database.
+1. Now that the table has been created, let's run a couple of sample queries to get used to the SQL DW environment. Notice how you query the external table as you would any other table in the database.
 
 	````SQL
 	SELECT COUNT(*) FROM asb.WebsiteActivityExternal;
@@ -677,6 +683,7 @@ Now let's create the external tables. All we are doing here is defining column n
 		SUM(CASE WHEN Type = 'add' THEN Quantity ELSE 0 END) AS ProdAdds
 	FROM asb.WebsiteActivityExternal
 	GROUP BY ProductId;
+
 	````
 
 
@@ -758,6 +765,7 @@ The easiest and most efficient way to load data from Azure blob storage is to us
 Before we move to the next exercise, create a stored procedure to understand our most profitable products that will be used for reporting and analysis.
 
 1. Execute the following statement to create the summary table and table statistics.
+
 	````SQL	
 
 	IF EXISTS(SELECT * FROM sys.procedures WHERE name = 'asp_populate_productlogsummary')
@@ -1063,7 +1071,7 @@ In this task, you'll create the input and output tables corresponding to the lin
 
  1. typeProperties (the format will use the defaults for CSV: comma -,- for columns delimiter and line breaks -\n- for row delimiter):
 
-		````JavaScript
+	````JavaScript
 		"typeProperties": {
 			"folderPath": "processeddata/structuredlogs/{Year}/{Month}/{Day}",
 			"partitionedBy": 
@@ -1076,20 +1084,20 @@ In this task, you'll create the input and output tables corresponding to the lin
 				"type": "TextFormat"
 			}
 		},
-		````
+	````
 
  1. Daily availability:
 
-		````JavaScript
+	````JavaScript
 		"availability": {
 			"frequency": "Day",
 			"interval": 1
 		}
-		````
+	````
 
  1. Make sure the final _WebsiteActivityBlob_ dataset looks like the following snippet:
  
-		````JavaScript
+	````JavaScript
 		{
 			"name": "WebsiteActivityBlob",
 			"properties": {
@@ -1148,7 +1156,7 @@ In this task, you'll create the input and output tables corresponding to the lin
  	
 >**Note:** This step is optional since we've already added the Product Catalog data to the SQL DW database during our earlier exercise. 
 
- 		````JavaScript
+	````JavaScript
 		{
 			"name": "RawProductCatalogBlob",
 			"properties": {
@@ -1163,11 +1171,11 @@ In this task, you'll create the input and output tables corresponding to the lin
 				"availability": {
 					"frequency": "Day",
 					"interval": 1
-				}
+				},
 				"external": true
 			}
 		}
-		````
+	````
 
  1. (Optional) Here's what the Structured Dataset would look like.
 
@@ -1621,8 +1629,7 @@ In this task, you'll create a new pipeline to move the Hive activity output (sto
                     "writeBatchSize": 0,
                     "writeBatchTimeout": "00:00:00"
 				    }
-				}
-			},
+				},
 			"inputs": [
 				{
 					"name": "WebsiteActivityBlob"
