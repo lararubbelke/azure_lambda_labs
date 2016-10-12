@@ -1148,7 +1148,7 @@ In this task, you'll create the input and output tables corresponding to the lin
 				}
 			}
 		}
-		````
+	````
 
  1. Click **Deploy** on the toolbar to deploy the dataset.
 
