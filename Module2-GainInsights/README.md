@@ -527,7 +527,7 @@ In this task, we'll create our hive scripts to process out data. This is used to
 	FROM unique_purchases a LEFT OUTER JOIN all_purchased_products b ON (a.userid = b.userid);
 
 	DROP TABLE IF EXISTS related_products;
-	CREATE TABLE related_products ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' LOCATION 'wasbs://processeddata@<StorageAccountName>.blob.core.windows.net/related_products/' AS 
+	CREATE TABLE related_products ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' LINES TERMINATED BY '\n' LOCATION 'wasbs://processeddata@<StorageAccountName>.blob.core.windows.net/related_products/' AS 
 	SELECT c.productid, c.related_product, c.qty, rank() OVER (PARTITION BY c.productid ORDER BY c.qty DESC) as rank FROM
 	(SELECT a.productid, a.related_product, SUM(a.quantity) as qty FROM
 	(SELECT b.productid, SPLIT(prod_list, ',')[0] as related_product, CAST(SPLIT(prod_list, ',')[1] as INT) as quantity
